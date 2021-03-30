@@ -392,6 +392,274 @@ def process_LidarSim_scan(scan,scantype,elevation,azimuth,ranges,time):
     else:
         print('Not a valid scan type')
         return np.nan
+
+##############################################################################
+# This function puts vr observations from a RHI onto a vertical grid at one
+# location to be used for virtual tower calculations
+##############################################################################
+
+def rhi_vertical_profile(field,elevation,azimuth,ranges,heights,dz,loc,offset=None,
+                         time=None,missing=None):
+    
+    if len(loc) != 2:
+        raise IOError('Dims must be a 2 length tuple')
+    
+    if offset is not None:
+        if len(offset) != 3:
+            raise IOError('If offset is specified it must be 3 length tuple')
+    else:
+        offset = (0,0,0)
+        
+    if (time is None) & (len(field.shape) == 2):
+        times = 1
+        time = [0]
+        raw = np.array([field])
+        el = np.array([elevation])
+    elif (time is None) & (len(field.shape) == 3):
+        time = np.arange(field.shape[0])
+        el = np.copy(elevation)
+        raw = np.copy(field)
+        times = len(time)
+    else:
+        times = len(time)
+        raw = np.copy(field)
+        el = np.copy(elevation)
+    
+    if missing is not None:
+        raw[raw==missing] = np.nan
+        
+    x = ranges[None,:] * np.cos(np.deg2rad(el))[:,:,None]*np.sin(np.deg2rad(azimuth)) + offset[0]
+    y = ranges[None,:] * np.cos(np.deg2rad(el))[:,:,None]*np.cos(np.deg2rad(azimuth)) + offset[1]
+    z = ranges[None,:] * np.sin(np.deg2rad(el))[:,:,None] + offset[2]
+    
+    r = np.sqrt(x**2 + y**2)
+
+    z_interp = np.arange(heights[0],heights[1],dz)
+    
+    z_ranges = np.sqrt((loc[0]-offset[0])**2 + (loc[1]-offset[1])**2+(z_interp-offset[2])**2)
+    z_el = np.rad2deg(np.arctan2(z_interp-offset[2],np.sqrt((loc[0]-offset[0])**2+(loc[1]-offset[1])**2)))
+    
+    grid_field = []
+    grid_x,grid_z = np.meshgrid(np.array(np.sqrt(loc[0]**2 + loc[1]**2)),z_interp)
+    for i in range(times):
+        grid_field.append(scipy.interpolate.griddata((r[i].ravel(),z[i].ravel()),
+                                                     raw[i].ravel(),(grid_x,grid_z))[:,0])
+    
+    return vertical_vr(grid_field,loc[0],loc[1],z_interp,dz,offset,z_el,z_ranges,azimuth,time)
+
+##############################################################################
+# This function calculates the wind components for a virtual towers
+##############################################################################
+
+def virtual_tower(vr,elevation,azimuth,height,uncertainty = 0.45):
+    
+    if len(vr) == 2:
+        u = []
+        v = []
+        u_uncertainty = []
+        v_uncertainty = []
+        el1 = np.deg2rad(elevation[0])
+        el2 = np.deg2rad(elevation[1])
+        az1 = np.deg2rad(azimuth[0])
+        az2 = np.deg2rad(azimuth[1])
+        for i in range(len(height)):
+            if ((np.isnan(vr[0][i]) | np.isnan(vr[1][i]))):
+                u.append(np.nan)
+                v.append(np.nan)
+                
+                M = np.array([[np.sin(az1)*np.cos(el1[i]),np.cos(az1)*np.cos(el1[i])],
+                              [np.sin(az2)*np.cos(el2[i]),np.cos(az2)*np.cos(el2[i])]])
+                invM = np.linalg.inv(M)
+                temp_u = np.sqrt((invM[0,0]**2)*(uncertainty**2) + (invM[0,1]**2)*(uncertainty**2))
+                temp_v = np.sqrt((invM[1,0]**2)*(uncertainty**2) + (invM[1,1]**2)*(uncertainty**2))
+                u_uncertainty.append(temp_u)
+                v_uncertainty.append(temp_v)
+
+            else:
+                M = np.array([[np.sin(az1)*np.cos(el1[i]),np.cos(az1)*np.cos(el1[i])],
+                              [np.sin(az2)*np.cos(el2[i]),np.cos(az2)*np.cos(el2[i])]])
+                temp = np.linalg.solve(M,np.array([vr[0][i],vr[1][i]]))
+                u.append(np.copy(temp[0]))
+                v.append(np.copy(temp[1]))
+                
+                invM = np.linalg.inv(M)
+                temp_u = np.sqrt((invM[0,0]**2)*(uncertainty**2) + (invM[0,1]**2)*(uncertainty**2))
+                temp_v = np.sqrt((invM[1,0]**2)*(uncertainty**2) + (invM[1,1]**2)*(uncertainty**2))
+                u_uncertainty.append(temp_u)
+                v_uncertainty.append(temp_v)
+                
+        return np.array([u,v]),np.array([u_uncertainty,v_uncertainty])
+                              
+    elif len(vr) == 3:
+        u = []
+        v = []
+        w = []
+        u_uncertainty = []
+        v_uncertainty = []
+        w_uncertainty = []
+        el1 = np.deg2rad(elevation[0])
+        el2 = np.deg2rad(elevation[1])
+        el3 = np.deg2rad(elevation[2])
+        az1 = np.deg2rad(azimuth[0])
+        az2 = np.deg2rad(azimuth[1])
+        az3 = np.deg2rad(azimuth[2])
+        for i in range(len(height)):
+            if ((np.isnan(vr[0][i]) | np.isnan(vr[1][i]))):
+                u.append(np.nan)
+                v.append(np.nan)
+                
+                M = np.array([[np.sin(az1)*np.cos(el1[i]),np.cos(az1)*np.cos(el1[i]),np.sin(el1)],
+                              [np.sin(az2)*np.cos(el2[i]),np.cos(az2)*np.cos(el2[i]),np.sin(el2)],
+                              [np.sin(az3)*np.cos(el3[i]),np.cos(az3)*np.cos(el3[i]),np.sin(el3)]])
+                invM = np.linalg.inv(M)
+                temp_u = np.sqrt((invM[0,0]**2)*(uncertainty**2) + (invM[0,1]**2)*(uncertainty**2) + (invM[0,2]**2)*(uncertainty**2))
+                temp_v = np.sqrt((invM[1,0]**2)*(uncertainty**2) + (invM[1,1]**2)*(uncertainty**2) + (invM[1,2]**2)*(uncertainty**2))
+                temp_w = np.sqrt((invM[2,0]**2)*(uncertainty**2) + (invM[2,1]**2)*(uncertainty**2) + (invM[2,2]**2)*(uncertainty**2))
+                
+                u_uncertainty.append(temp_u)
+                v_uncertainty.append(temp_v)
+                w_uncertainty.append(temp_w)
+            else:
+                M = np.array([[np.sin(az1)*np.cos(el1[i]),np.cos(az1)*np.cos(el1[i]),np.sin(el1)],
+                              [np.sin(az2)*np.cos(el2[i]),np.cos(az2)*np.cos(el2[i]),np.sin(el2)],
+                              [np.sin(az3)*np.cos(el3[i]),np.cos(az3)*np.cos(el3[i]),np.sin(el3)]])
+                temp = np.linalg.solve(M,np.array([vr[0][i],vr[1][i],vr[2][i]]))
+                u.append(np.copy(temp[0]))
+                v.append(np.copy(temp[1]))
+                w.append(np.copy(temp[2]))
+                
+                invM = np.linalg.inv(M)
+                temp_u = np.sqrt((invM[0,0]**2)*(uncertainty**2) + (invM[0,1]**2)*(uncertainty**2) + (invM[0,2]**2)*(uncertainty**2))
+                temp_v = np.sqrt((invM[1,0]**2)*(uncertainty**2) + (invM[1,1]**2)*(uncertainty**2) + (invM[1,2]**2)*(uncertainty**2))
+                temp_w = np.sqrt((invM[2,0]**2)*(uncertainty**2) + (invM[2,1]**2)*(uncertainty**2) + (invM[2,2]**2)*(uncertainty**2))
+                
+                u_uncertainty.append(temp_u)
+                v_uncertainty.append(temp_v)
+                w_uncertainty.append(temp_w)
+                
+        return np.array([u,v,w]), np.array([u_uncertainty,v_uncertainty,w_uncertainty])
+    else:
+        print('Input needs to be a length 2 or 3 tuple')
+        return np.nan
+
+##############################################################################
+# This function performs a Lenshow correction to lidar data and calculates
+# vertical velocity variance. This function was originally written by Tyler
+# Bell at CIMMS in Norman, OK.
+##############################################################################
+
+def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
+    """
+    Reads in a timeseries. Freq is in Hz. Default taus are from avg values from Bonin Dissertation (2015)
+    Returns avg w'**2 and avg error'**2
+    """
+    # Find the perturbation of x
+    mean = np.mean(x)
+    prime = x - mean
+    # Get the autocovariance 
+    acorr, lags = xcorr(prime, prime)
+    var = np.var(prime)
+    acov = acorr# * var
+    # Extract lags > 0
+    lags = lags[int(len(lags)/2):] * freq
+    acov = acov[int(len(acov)/2):]
+    # Define the start and end lags
+    lag_start = int(tau_min / freq)
+    lag_end = int(tau_max / freq)
+    # Fit the structure function
+    fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.) 
+    err_funct = lambda p, t, y: fit_funct(p, t) - y
+    p1, success = leastsq(err_funct, [1, .001], args=(lags[lag_start:lag_end], acov[lag_start:lag_end]))
+    if plot:
+        new_lags = np.arange(tau_min, tau_max)
+        plt.plot(lags, acov)
+        plt.plot(new_lags, fit_funct(p1, new_lags), 'gX')
+        plt.plot(0, fit_funct(p1, 0), 'gX')
+        plt.xlim(0, tau_max+20)
+        plt.xlabel("Lag [s]")
+        plt.ylabel("$M_{11} [m^2s^{-2}$]")
+    return p1[0], acov[0] - p1[0]
+
+##############################################################################
+# This is a modified version of the Lenshow correction that adaptively selects
+# taus based on the data. This function was originally written by Tyler Bell at
+# CIMMS in Norman, OK.
+###############################################################################
+    
+def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=False):
+    # Find the perturbation of x
+    mean = np.mean(x)
+    prime = x - mean
+    # Get the autocovariance 
+    acorr, lags = xcorr(prime, prime)
+    var = np.var(prime)
+    acov = acorr #* var
+    # Extract lags > 0
+    lags = lags[int(len(lags)/2):] * freq
+    acov = acov[int(len(acov)/2):]
+    # Define the start and end lags
+    lag_start = int(tau_min / freq)
+    lag_end = int((tau_min+3) / freq)
+    # Fit the structure function
+    fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.) 
+    err_funct = lambda p, t, y: fit_funct(p, t) - y
+    # Iterate to find t_int
+    last_tint = (tau_min+3)
+    i = 0
+    p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end], acov[lag_start:lag_end]))
+    tint = calc_tint(p1[0], freq, acov, lags)
+    while np.abs(last_tint - tint) > 1.:
+        if i >= max_iter:
+            return None
+        else:
+            i += 1
+            last_tint = tint
+        p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end], acov[lag_start:lag_end]))
+        tint = calc_tint(p1[0], freq, acov, lags)
+    # Find the time where M11(t) = M11(0)/2
+    ind = np.min(np.where(acov <= acov[0]/2))
+    # Determine what tau to use
+    tau_max = np.min([tint/2., lags[ind]])
+    # Do the process
+    lag_end = int(tau_max / freq)
+    if lag_start+1 >= lag_end:
+        lag_end = lag_start + 2
+    p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end], acov[lag_start:lag_end]))
+    if plot:
+        new_lags = np.arange(tau_min, tau_max)
+        plt.plot(lags, acov, 'k')
+        plt.plot(new_lags, fit_funct(p1, new_lags), 'rX', label='Adaptive')
+        plt.plot(0, fit_funct(p1, 0), 'rX')
+        plt.xlim(0, tau_max+20)
+        plt.xlabel("Lag [s]")
+        plt.ylabel("$M_{11} [m^2s^{-2}$]")
+    return p1[0], np.abs(acov[0] - p1[0]), tau_max
+
+##############################################################################
+# This function is used in the lenshow_bonin fuction
+##############################################################################
+
+def calc_tint(var, freq, acov, lags):
+    ind = np.min(np.where(acov < 0))
+    return freq**-1. + 1./var * sum(acov[1:ind] / freq)
+
+##############################################################################
+# This function calculates the lag correlation of a time series.
+##############################################################################
+
+def xcorr(y1,y2):
+    
+    if len(y1) != len(y2):
+        raise ValueError('The lenghts of the inputs should be the same')
+    
+    corr = np.correlate(y1,y2,mode='full')
+    unbiased_size = np.correlate(np.ones(len(y1)),np.ones(len(y1)),mode='full')
+    corr = corr/unbiased_size
+    
+    maxlags = len(y1)-1
+    lags = np.arange(-maxlags,maxlags + 1)
+    
+    return corr,lags
         
 ##############################################################################
 #  Create VAD output in ARM netCDF format
