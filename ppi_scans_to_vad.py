@@ -38,7 +38,7 @@ for ppi in ppi_scans:
   # for low elevation angles, VAD output isn't very helpful
   # NEED THIS IF STATEMENT IF THE LIST OF PPIs MIGHT USE A DIFFERENT # OF AZIMUTH ANGLES
   # For this case, SWEX ppis need to have 360 azimuth angles
-  if elevation < 6 or len(azimuth) < 360:
+  if elevation < 6 or len(azimuth) != 360:
     continue
 
   for x in range(len(azimuth)):
