@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=C0103,E1101
 
 """
 Decoder for raw .hpl files that are outputted by the Halo Photonics doppler lidar.
@@ -13,12 +14,12 @@ Original Author: Tyler Bell - University of Oklahoma (March 2017)
 """
 
 
-import netCDF4
-import numpy as np
 import logging
 import os
 import argparse
 from datetime import datetime, timedelta
+import netCDF4
+import numpy as np
 
 
 # Key is name of scan type in header, value is name as it should appear
@@ -74,7 +75,8 @@ def process_file(in_file, out_dir, prefix):
     header = decode_header(lines[0:11])
 
     ngates = int(header['Number of gates'])
-    # nrays = int(header['No. of rays in file'])  # Cant do this apparently. Not always correct (wtf)
+    # nrays = int(header['No. of rays in file'])
+    # Cant do this apparently. Not always correct (wtf)
     len_data = len(lines[17:])
     nrays = int(len_data / (ngates + 1))
 
@@ -139,7 +141,8 @@ def process_file(in_file, out_dir, prefix):
     if prefix is None:
         filename = start_time.strftime("{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type))
     else:
-        filename = start_time.strftime("{prefix}_{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type, prefix=prefix))
+        filename = start_time.strftime("{prefix}_{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type,
+                                                                                 prefix=prefix))
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -242,7 +245,7 @@ def process_file(in_file, out_dir, prefix):
     return filename
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', dest='in_files', nargs='*')
     parser.add_argument('-o', dest='out_dir')
