@@ -1,15 +1,16 @@
 #!/opt/local/anaconda3/bin/python
 # pylint: disable=C0103
 
-# Created March 2021
-# Carol Costanza
-#
-# Output VAD winds into ARM netCDF format from cfradial format
-# Program works for either 1 cfradial file or multiple within 1 day
-#
-# EXAMPLE RUN FROM COMMAND LINE
-# ./ppi_scans_to_vad.py 'path_to_cfradial' 'path_nc_file_dest' 'max_cnr'
+"""
+Created March 2021
+Carol Costanza
 
+Output VAD winds into ARM netCDF format from cfradial format
+Program works for either 1 cfradial file or multiple within 1 day
+
+EXAMPLE RUN FROM COMMAND LINE
+./ppi_scans_to_vad.py 'path_to_cfradial' 'path_nc_file_dest' 'max_cnr'
+"""
 import sys
 import warnings
 import glob

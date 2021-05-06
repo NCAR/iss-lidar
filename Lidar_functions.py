@@ -13,11 +13,11 @@ import matplotlib.pyplot as plt
 import scipy.interpolate
 import netCDF4
 import datetime as dt
-
-##############################################################################
-# This is a class created for VAD data
-##############################################################################
 class VAD:
+    """
+    This is a class created for VAD data
+    """
+
     def __init__(self, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, time, el,
                  nbeams):
         self.u = np.array(u)
@@ -35,11 +35,11 @@ class VAD:
         self.el = el
         self.nbeams = nbeams
 
-##############################################################################
-# This is a class created for gridded RHI data
-##############################################################################
-
 class gridded_RHI:
+    """
+    This is a class created for gridded RHI data
+    """
+
     def __init__(self, field, x, z, dx, offset, grid_el, grid_range, time):
         self.field = np.array(field)
         self.x = np.array(x)
@@ -51,14 +51,13 @@ class gridded_RHI:
         self.grid_el = grid_el
         self.grid_range = grid_range
 
-##############################################################################
-# This function calculates VAD wind profiles using the technique shown in
-# Newsom et al. (2019). This function can calculate one VAD profile or a series
-# of VAD profiles depending on the radial velocity input
-##############################################################################
 
 def ARM_VAD(radial_vel, ranges, el, az, time=None, missing=None):
-
+    """
+    This function calculates VAD wind profiles using the technique shown in
+    Newsom et al. (2019). This function can calculate one VAD profile or a
+    series of VAD profiles depending on the radial velocity input
+    """
     if (time is None) & (len(np.array(radial_vel).shape) == 2):
         times = 1
         time = [0]
@@ -164,11 +163,10 @@ def ARM_VAD(radial_vel, ranges, el, az, time=None, missing=None):
 
     return VAD(u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, time, el, len(az))
 
-##############################################################################
-# This function will plot wind profiles from VAD objects
-##############################################################################
-
 def plot_VAD(vad, filename, plot_time=None, title=None):
+    """
+    This function will plot wind profiles from VAD objects
+    """
 
     if plot_time is None:
         plot_time = len(vad.time) - 1
@@ -219,13 +217,11 @@ def plot_VAD(vad, filename, plot_time=None, title=None):
 
         plt.close()
 
-##############################################################################
-# This function will plot wind profiles from VAD objects and Comparison to
-# other ws,wd,w,z
-##############################################################################
-
 def plot_VAD_comp(vad, altitude, ws, wd, w, z, wprof_alt, filename, plot_time=None, title=None):
-
+    """
+    This function will plot wind profiles from VAD objects and Comparison to
+    other ws,wd,w,z
+    """
     if plot_time is None:
         plot_time = len(vad.time) - 1
         start = 0
@@ -284,14 +280,12 @@ def plot_VAD_comp(vad, altitude, ws, wd, w, z, wprof_alt, filename, plot_time=No
 
         plt.close()
 
-##############################################################################
-# This function will take RHI scans and will put them onto a 2-D cartesian grid
-# using linear interpolation
-##############################################################################
-
 def grid_rhi(field, elevation, ranges, dims, dx, offset=None,
              time=None, missing=None):
-
+    """
+    This function will take RHI scans and will put them onto a 2-D cartesian
+    grid using linear interpolation
+    """
     if len(dims) != 2:
         raise IOError('Dims must be a 2 length tuple')
 
@@ -337,12 +331,10 @@ def grid_rhi(field, elevation, ranges, dims, dx, offset=None,
 
     return gridded_RHI(grid_field, grid_x, grid_z, dx, offset, grid_el, grid_range, time)
 
-##############################################################################
-# This function calculates a coplanar wind field from two gridded RHIs
-##############################################################################
-
 def coplanar_analysis(vr1, vr2, el1, el2, az):
-
+    """
+    This function calculates a coplanar wind field from two gridded RHIs
+    """
     u = np.ones(vr1.shape)*np.nan
     w = np.ones(vr1.shape)*np.nan
 
@@ -361,12 +353,10 @@ def coplanar_analysis(vr1, vr2, el1, el2, az):
 
     return u, w
 
-##############################################################################
-# The function calculates the vr-variance from a timeseries of scans
-##############################################################################
-
 def vr_variance(field, time, t_avg, axis=0):
-
+    """
+    The function calculates the vr-variance from a timeseries of scans
+    """
     t_avg = t_avg*60
     start = 0
     yo = np.where(time < (time[0]+t_avg))[0]
@@ -382,12 +372,10 @@ def vr_variance(field, time, t_avg, axis=0):
 
     return np.array(var), np.array(time_avg)
 
-##############################################################################
-# This function will work with LidarSim data
-##############################################################################
-
 def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
-
+    """
+    This function will work with LidarSim data
+    """
     if scantype == 'vad':
         el = np.nanmean(elevation)
         vad = ARM_VAD(scan, ranges, el, azimuth, time)
@@ -398,14 +386,12 @@ def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
         print('Not a valid scan type')
         return np.nan
 
-##############################################################################
-# This function puts vr observations from a RHI onto a vertical grid at one
-# location to be used for virtual tower calculations
-##############################################################################
-
 def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc, offset=None,
                          time=None, missing=None):
-
+    """
+    This function puts vr observations from a RHI onto a vertical grid at one
+    location to be used for virtual tower calculations
+    """
     if len(loc) != 2:
         raise IOError('Dims must be a 2 length tuple')
 
@@ -454,12 +440,10 @@ def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc, of
     return vertical_vr(grid_field, loc[0], loc[1], z_interp, dz, offset, z_el, z_ranges,
                        azimuth, time)
 
-##############################################################################
-# This function calculates the wind components for a virtual towers
-##############################################################################
-
 def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
-
+    """
+    This function calculates the wind components for a virtual towers
+    """
     if len(vr) == 2:
         u = []
         v = []
@@ -567,17 +551,14 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
         print('Input needs to be a length 2 or 3 tuple')
         return np.nan
 
-##############################################################################
-# This function performs a Lenshow correction to lidar data and calculates
-# vertical velocity variance. This function was originally written by Tyler
-# Bell at CIMMS in Norman, OK.
-##############################################################################
-
 def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
     """
+    This function performs a Lenshow correction to lidar data and calculates
+    vertical velocity variance. This function was originally written by Tyler
+    Bell at CIMMS in Norman, OK.
+
     Reads in a timeseries. Freq is in Hz. Default taus are from avg values from
-    Bonin Dissertation (2015)
-    Returns avg w'**2 and avg error'**2
+    Bonin Dissertation (2015) Returns avg w'**2 and avg error'**2
     """
     # Find the perturbation of x
     mean = np.mean(x)
@@ -607,13 +588,12 @@ def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
         plt.ylabel("$M_{11} [m^2s^{-2}$]")
     return p1[0], acov[0] - p1[0]
 
-##############################################################################
-# This is a modified version of the Lenshow correction that adaptively selects
-# taus based on the data. This function was originally written by Tyler Bell at
-# CIMMS in Norman, OK.
-###############################################################################
-
 def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=False):
+    """
+    This is a modified version of the Lenshow correction that adaptively selects
+    taus based on the data. This function was originally written by Tyler Bell
+    at CIMMS in Norman, OK.
+    """
     # Find the perturbation of x
     mean = np.mean(x)
     prime = x - mean
@@ -665,20 +645,17 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=F
         plt.ylabel("$M_{11} [m^2s^{-2}$]")
     return p1[0], np.abs(acov[0] - p1[0]), tau_max
 
-##############################################################################
-# This function is used in the lenshow_bonin fuction
-##############################################################################
-
 def calc_tint(var, freq, acov, lags):
+    """
+    This function is used in the lenshow_bonin function
+    """
     ind = np.min(np.where(acov < 0))
     return freq**-1. + 1./var * sum(acov[1:ind] / freq)
 
-##############################################################################
-# This function calculates the lag correlation of a time series.
-##############################################################################
-
 def xcorr(y1, y2):
-
+    """
+    This function calculates the lag correlation of a time series.
+    """
     if len(y1) != len(y2):
         raise ValueError('The lenghts of the inputs should be the same')
 
@@ -691,12 +668,11 @@ def xcorr(y1, y2):
 
     return corr, lags
 
-##############################################################################
-#  Create VAD output in ARM netCDF format
-##############################################################################
-
 def VAD_ARM_nc_format(VAD, mean_cnr, max_cnr, altitude, latitude, longitude, stime, etime,
                       file_path):
+    """
+    Create VAD output in ARM netCDF format
+    """
     str_start_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y-%m-%d %H:%M:%S')
     str_day_start_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y-%m-%d')
     secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',\
@@ -820,12 +796,11 @@ def VAD_ARM_nc_format(VAD, mean_cnr, max_cnr, altitude, latitude, longitude, sti
     nc_file.history = 'created on ' + dt.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S UTC')
 
     nc_file.close()
-##############################################################################
-# This function reads in cfradial files to variables needed for VAD analysis
-##############################################################################
 
 def read_cfradial(file_path):
-
+    """
+    This function reads in cfradial files to variables needed for VAD analysis
+    """
     lidar_file = netCDF4.Dataset(file_path, 'r')
     cnr = lidar_file.variables['cnr'][:]
     ranges = lidar_file.variables['range'][:]
