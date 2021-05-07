@@ -63,5 +63,4 @@ else:
 
 final_file_path = final_path + 'VAD_' + filename_time + '.nc'
 VAD = Lidar_functions.ARM_VAD(vr_all, ranges_ppi, elevation, azimuth)
-Lidar_functions.VAD_ARM_nc_format(VAD, mean_cnr, max_cnr, alt, lat, lon, stime, etime,
-                                  final_file_path)
+VAD.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
