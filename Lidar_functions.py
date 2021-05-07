@@ -37,11 +37,11 @@ def ARM_VAD(radial_vel, ranges, el, az, time=None, missing=None):
     Newsom et al. (2019). This function can calculate one VAD profile or a
     series of VAD profiles depending on the radial velocity input
     """
-    if (time is None) & (len(np.array(radial_vel).shape) == 2):
+    if (time is None) and (len(np.array(radial_vel).shape) == 2):
         times = 1
         time = [0]
         vr = np.array([radial_vel])
-    elif (time is None) & (len(np.array(radial_vel).shape) == 3):
+    elif (time is None) and (len(np.array(radial_vel).shape) == 3):
         time = np.arange(np.array(radial_vel).shape[0])
         vr = np.copy(radial_vel)
         times = len(time)
@@ -157,12 +157,12 @@ def grid_rhi(field, elevation, ranges, dims, dx, offset=None,
     else:
         offset = (0, 0)
 
-    if (time is None) & (len(field.shape) == 2):
+    if (time is None) and (len(field.shape) == 2):
         times = 1
         time = [0]
         raw = np.array([field])
         el = np.array([elevation])
-    elif (time is None) & (len(field.shape) == 3):
+    elif (time is None) and (len(field.shape) == 3):
         time = np.arange(field.shape[0])
         el = np.copy(elevation)
         raw = np.copy(field)
@@ -203,7 +203,7 @@ def coplanar_analysis(vr1, vr2, el1, el2, az):
     for i in range(vr1.shape[0]):
         for j in range(vr1.shape[1]):
 
-            if (~np.isnan(vr1[i, j])) & (~np.isnan(vr2[i, j])):
+            if (~np.isnan(vr1[i, j])) and (~np.isnan(vr2[i, j])):
                 M = np.array([[np.sin(np.deg2rad(az))*np.cos(np.deg2rad(el1[i, j])),
                                np.sin(np.deg2rad(el1[i, j]))],
                               [np.sin(np.deg2rad(az))*np.cos(np.deg2rad(el2[i, j])),
@@ -263,12 +263,12 @@ def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc, of
     else:
         offset = (0, 0, 0)
 
-    if (time is None) & (len(field.shape) == 2):
+    if (time is None) and (len(field.shape) == 2):
         times = 1
         time = [0]
         raw = np.array([field])
         el = np.array([elevation])
-    elif (time is None) & (len(field.shape) == 3):
+    elif (time is None) and (len(field.shape) == 3):
         time = np.arange(field.shape[0])
         el = np.copy(elevation)
         raw = np.copy(field)
@@ -316,7 +316,7 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
         az1 = np.deg2rad(azimuth[0])
         az2 = np.deg2rad(azimuth[1])
         for i in range(len(height)):
-            if np.isnan(vr[0][i]) | np.isnan(vr[1][i]):
+            if np.isnan(vr[0][i]) or np.isnan(vr[1][i]):
                 u.append(np.nan)
                 v.append(np.nan)
 
@@ -361,7 +361,7 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
         az2 = np.deg2rad(azimuth[1])
         az3 = np.deg2rad(azimuth[2])
         for i in range(len(height)):
-            if np.isnan(vr[0][i]) | np.isnan(vr[1][i]):
+            if np.isnan(vr[0][i]) or np.isnan(vr[1][i]):
                 u.append(np.nan)
                 v.append(np.nan)
 

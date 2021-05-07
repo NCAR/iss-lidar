@@ -71,7 +71,7 @@ class VAD:
 
             plt.tight_layout()
 
-            if (start == 0) & (len(self.time) > 1):
+            if (start == 0) and (len(self.time) > 1):
                 if os.path.isdir(filename):
                     plt.savefig(filename + str(self.time[i]))
                 else:
@@ -134,7 +134,7 @@ class VAD:
 
             plt.tight_layout()
 
-            if (start == 0) & (len(self.time) > 1):
+            if (start == 0) and (len(self.time) > 1):
                 if os.path.isdir(filename):
                     plt.savefig(filename + str(self.time[i]))
                 else:
