@@ -14,18 +14,25 @@ EXAMPLE RUN FROM COMMAND LINE
 import sys
 import warnings
 import glob
+import argparse
 import datetime as dt
 import numpy as np
 import Lidar_functions
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
 
+parser = argparse.ArgumentParser(description="Generate netCDF of VAD winds from PPI scans")
+parser.add_argument("--max_cnr", default=-22, type=float, help="threshold cnr below this value")
+parser.add_argument("ppifiles", help="ppi file(s) for input")
+parser.add_argument("destdir", help="directory to save VAD files to")
+args = parser.parse_args()
+
 # get paths for ppi from command line input
-all_path_ppi = sys.argv[1]
+all_path_ppi = args.ppifiles
 # get path for final nc file
-final_path = sys.argv[2]
+final_path = args.destdir
 # get cnr/snr threshold from command line input
-max_cnr = float(sys.argv[3])
+max_cnr = args.max_cnr
 
 # get list of all the ppi files for a given day
 ppi_files = glob.glob(all_path_ppi)
