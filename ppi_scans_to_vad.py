@@ -11,6 +11,7 @@ Program works for either 1 cfradial file or multiple within 1 day
 EXAMPLE RUN FROM COMMAND LINE
 ./ppi_scans_to_vad.py 'path_to_cfradial' 'path_nc_file_dest' 'max_cnr'
 """
+import os
 import sys
 import warnings
 import glob
@@ -67,7 +68,7 @@ if len(ppi_scans) > 1:
     filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d')
 else:
     filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d_%H%M%S')
-
-final_file_path = final_path + 'VAD_' + filename_time + '.nc'
+final_file_name = 'VAD_' + filename_time + '.nc'
+final_file_path = os.path.join(final_path, final_file_name)
 VAD = Lidar_functions.ARM_VAD(vr_all, ranges_ppi, elevation, azimuth)
 VAD.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
