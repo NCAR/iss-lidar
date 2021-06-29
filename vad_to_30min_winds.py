@@ -33,7 +33,7 @@ def parseArgs():
 
 args = parseArgs()
 # get paths for ppi from command line input
-vad_scan_path = args.vadfiles
+vad_scan_path = args.vadfile
 # get path for final nc file
 final_path = args.destdir
 # get str date
