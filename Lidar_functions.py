@@ -547,3 +547,36 @@ def read_cfradial(file_path):
     str_end = lidar_file.end_time
 
     return [cnr, ranges, vr, elevation, azimuth, str_start, str_end, latitude, longitude, altitude]
+
+#############################################################################
+# This function uses consensus averaging to output an average given a window
+#############################################################################
+
+def consensus_avg(vals,window):
+
+    max_num_inds = 0 
+    vals = sorted(vals[~np.isnan(vals)])
+
+    if vals == []:
+        return np.nan
+
+    for v in vals:
+        booleans = np.logical_and(vals >= v,vals <= v+window)
+        inds = np.where(booleans == True)[0]
+        num_inds = len(inds)
+        val_range = vals[inds[-1]] - vals[inds[0]]
+
+        if num_inds > max_num_inds:
+            max_num_inds = num_inds
+            final_range = val_range
+            final_inds = inds
+
+        elif num_inds == max_num_inds:
+            if val_range < final_range:
+                max_num_inds = num_inds
+                final_range = val_range
+                final_inds = inds
+        final_vals = [vals[i] for i in final_inds]
+    avg = np.mean(final_vals)
+
+    return avg
