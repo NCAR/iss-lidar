@@ -28,6 +28,7 @@ def parseArgs():
     parser.add_argument("vadfile", help="daily VAD file")
     parser.add_argument("destdir", help="directory to save averaged file to")
     parser.add_argument("date", help="date of file to create")
+    parser.add_argument("--plot", help="create PNG plot w/ same filename as netcdf", dest="plot", default=False, action='store_true')
     return parser.parse_args()
 
 
@@ -69,14 +70,17 @@ w = vad_file.variables['w'][:]
 u_mean = np.zeros((48,len(heights)))
 v_mean = np.zeros((48,len(heights)))
 w_mean = np.zeros((48,len(heights)))
+
 # create plot
-ticklabels = matplotlib.dates.DateFormatter("%H:%M")
-fig,ax = plt.subplots(1,1,figsize=(10,8))
-fig.suptitle('SWEX 30 minute winds starting at %s %s:00:00 for 24 hours' % (date,hr_start[0]))
-ax.set_ylabel('Height (m)')
-ax.set_xlabel('HH:MM UTC')
-ax.set_ylim(0,1500)
-ax.xaxis.set_major_formatter(ticklabels)
+ax = None
+if (args.plot):
+    ticklabels = matplotlib.dates.DateFormatter("%H:%M")
+    fig,ax = plt.subplots(1,1,figsize=(10,8))
+    fig.suptitle('SWEX 30 minute winds starting at %s %s:00:00 for 24 hours' % (date,hr_start[0]))
+    ax.set_ylabel('Height (m)')
+    ax.set_xlabel('HH:MM UTC')
+    ax.set_ylim(0,1500)
+    ax.xaxis.set_major_formatter(ticklabels)
 
 #for ind_start in range(len(secs)-1):
 for idx, sec in enumerate(secs):
@@ -103,10 +107,12 @@ for idx, sec in enumerate(secs):
         w_mean[idx,hgt] = Lidar_functions.consensus_avg(w_all[:,hgt],5)  
 
     vert_time = [full_datetime[idx]]*len(heights)
-    ax.barbs(vert_time,heights,u_mean[idx],v_mean[idx],barb_increments=dict(half=2.5,full=5,flag=10))
+    if (args.plot):
+        ax.barbs(vert_time,heights,u_mean[idx],v_mean[idx],barb_increments=dict(half=2.5,full=5,flag=10))
 
-plt.savefig('%s/30min_winds_%s_%s.png' % (final_path,date,"new"))
-plt.close()
+if (args.plot):
+    plt.savefig('%s/30min_winds_%s.png' % (final_path,date))
+    plt.close()
 
 # create netCDF file
 nc_file = netCDF4.Dataset('%s/30min_winds_%s.nc' % (final_path,date),'w',format='NETCDF4')
