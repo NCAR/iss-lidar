@@ -11,6 +11,7 @@
 # ./vad_to_30min_winds.py 'path_to_VAD_nc_file' 'path_30min_nc_file_dest' 'date'
 
 import Lidar_functions
+import os
 import sys
 import argparse
 import netCDF4
@@ -115,7 +116,8 @@ if (args.plot):
     plt.close()
 
 # create netCDF file
-nc_file = netCDF4.Dataset('%s/30min_winds_%s.nc' % (final_path,date),'w',format='NETCDF4')
+filepath = os.path.join(final_path, "30min_winds_%s" % date)
+nc_file = netCDF4.Dataset(filepath, 'w',format='NETCDF4')
 nc_file.createDimension('time',48)
 nc_file.createDimension('height',len(heights))
 base_time = nc_file.createVariable('base_time','i')
