@@ -36,14 +36,6 @@ def selectFiles(path):
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
-def threshold_cnr(azimuth, ranges_ppi, cnr_ppi, vr, max_cnr):
-    # replace w/ np.masked_where?
-    for x in range(len(azimuth)):
-        for y in range(len(ranges_ppi)):
-            if cnr_ppi[x, y] < max_cnr:
-                vr[x, y] = np.nan
-
-    
 def process(ppi_files, max_cnr, final_path):
     stime = []
     etime = []
