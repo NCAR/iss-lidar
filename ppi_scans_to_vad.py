@@ -60,9 +60,9 @@ def process(ppi_files, max_cnr, final_path):
         ppi.threshold_cnr(max_cnr)
 
         vr_all.append(ppi.vr)
-        mean_cnr.append(np.nanmean(ppi.cnr_ppi, axis=0))
-        stime.append(dt.datetime.strptime(ppi.str_start_ppi, '%Y-%m-%d %H:%M:%S.%f').timestamp())
-        etime.append(dt.datetime.strptime(ppi.str_end_ppi, '%Y-%m-%d %H:%M:%S.%f').timestamp())
+        mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
+        stime.append(dt.datetime.strptime(ppi.str_start, '%Y-%m-%d %H:%M:%S.%f').timestamp())
+        etime.append(dt.datetime.strptime(ppi.str_end, '%Y-%m-%d %H:%M:%S.%f').timestamp())
 
     if len(ppi_files) > 1:
         filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d')
@@ -71,7 +71,7 @@ def process(ppi_files, max_cnr, final_path):
     final_file_name = 'VAD_' + filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
 
-    VAD = Lidar_functions.ARM_VAD(vr_all, ppi.ranges_ppi, ppi.elevation, ppi.azimuth)
+    VAD = Lidar_functions.ARM_VAD(vr_all, ppi.ranges, ppi.elevation, ppi.azimuth)
     VAD.create_ARM_nc(mean_cnr, max_cnr, ppi.alt, ppi.lat, ppi.lon, stime, etime, final_file_path)
 
 def main():
