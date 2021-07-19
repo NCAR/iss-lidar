@@ -42,7 +42,7 @@ def process(ppi_files, max_cnr, final_path):
     vr_all = []
     mean_cnr = []
     for f in ppi_files:
-        ppi = PPI(f)
+        ppi = PPI.fromFile(f)
         # for low elevation angles, VAD output isn't very helpful
         # NEED THIS IF STATEMENT IF THE LIST OF PPIs MIGHT USE A DIFFERENT # OF AZIMUTH ANGLES
         # For this case, SWEX ppis need to have 360 azimuth angles
