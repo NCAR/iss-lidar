@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 import netCDF4
+from datetime import datetime
+import pytz
 
 from vad import VAD
 
@@ -543,10 +545,13 @@ def read_cfradial(file_path):
     latitude = lidar_file.variables['latitude'][:]
     longitude = lidar_file.variables['longitude'][:]
     altitude = lidar_file.variables['altitude'][:]
-    str_start = lidar_file.start_time
-    str_end = lidar_file.end_time
+    # convert start/end to datetimes so they're easier to use.
+    # times in cfradial files are in UTC. timezone is not specified in start_time attribute,
+    # but is specified as 'Z' instead of 'UTC' in start_datetime attribute, which datetime won't parse.
+    start = datetime.strptime(lidar_file.start_time, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+    end = datetime.strptime(lidar_file.end_time, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
 
-    return [cnr, ranges, vr, elevation, azimuth, str_start, str_end, latitude, longitude, altitude]
+    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude, longitude, altitude]
 
 #############################################################################
 # This function uses consensus averaging to output an average given a window

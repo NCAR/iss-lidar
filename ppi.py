@@ -6,15 +6,15 @@ import Lidar_functions
 
 class PPI:
 
-    def __init__(self, cnr=None, ranges=None, vr=None, elevation=None, azimuth=None, str_start=None, str_end=None, lat=None, lon=None, alt=None):
+    def __init__(self, cnr=None, ranges=None, vr=None, elevation=None, azimuth=None, starttime=None, endtime=None, lat=None, lon=None, alt=None):
         """ Create PPI object from numpy arrays of data"""
         self.cnr = cnr
         self.ranges = ranges
         self.vr = vr
         self.elevation = elevation
         self.azimuth = azimuth
-        self.str_start = str_start
-        self.str_end = str_end
+        self.starttime = starttime
+        self.endtime = endtime
         self.lat = lat
         self.lon = lon
         self.alt = alt
@@ -22,8 +22,8 @@ class PPI:
     @classmethod
     def fromFile(cls, filename):
         """ Create PPI object by reading cfradial scan file """
-        [cnr, ranges, vr, elevation, azimuth, str_start, str_end, lat, lon, alt] = Lidar_functions.read_cfradial(filename)
-        return cls(cnr, ranges, vr, elevation, azimuth, str_start, str_end, lat, lon, alt)
+        [cnr, ranges, vr, elevation, azimuth, starttime, endtime, lat, lon, alt] = Lidar_functions.read_cfradial(filename)
+        return cls(cnr, ranges, vr, elevation, azimuth, starttime, endtime, lat, lon, alt)
 
     def threshold_cnr(self, max_cnr):
         """ Set vr to nan if cnr is below threshold """
