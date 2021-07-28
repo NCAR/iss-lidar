@@ -18,7 +18,7 @@ import glob
 import argparse
 import datetime as dt
 import numpy as np
-from vad import VAD
+from vad import VAD, VADSet
 from ppi import PPI
 
 warnings.simplefilter("ignore")
@@ -41,6 +41,7 @@ def process(ppi_files, max_cnr, final_path):
     etime = []
     vr_all = []
     mean_cnr = []
+    vads = []
     #need these values from any good PPI scan
     alt = None
     lat = None
@@ -58,13 +59,16 @@ def process(ppi_files, max_cnr, final_path):
         if ppi.elevation < 6:
             continue
         print('processing file: ', f, 'az length:', len(ppi.azimuth))
-        print("vr dims:", ppi.vr.shape)
         ppi.threshold_cnr(max_cnr)
         
         vr_all.append(ppi.vr)
         mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
         stime.append(ppi.starttime.timestamp())
         etime.append(ppi.endtime.timestamp())
+        
+        # generate VAD for this timestep
+        vad = VAD.calculate_ARM_VAD(ppi.vr, ppi.ranges, ppi.elevation, ppi.azimuth)
+        vads.append(vad)
         # good scan, so fill in metadata
         if alt is None:
             alt = ppi.alt
@@ -89,9 +93,11 @@ def process(ppi_files, max_cnr, final_path):
         filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d_%H%M%S')
     final_file_name = 'VAD_' + filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
-
-    vad = VAD.calculate_ARM_VAD(vr_all, ranges, elevation, azimuth)
-    vad.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
+    
+    vadset = VADSet(vads, mean_cnr, max_cnr, alt, lat, lon, stime, etime)
+    vadset.to_ARM_netcdf(final_file_path)
+#    vad = VAD.calculate_ARM_VAD(vr_all, ranges, elevation, azimuth)
+#    vad.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
 
 def main():
     args = createParser()

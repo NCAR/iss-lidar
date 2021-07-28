@@ -29,117 +29,90 @@ class VAD:
         self.nbeams = nbeams
 
     @classmethod
-    def calculate_ARM_VAD(cls, radial_vel, ranges, el, az, time=None, missing=None):
+    def calculate_ARM_VAD(cls, vr, ranges, el, az, time=None, missing=None):
         """
         This function calculates VAD wind profiles using the technique shown in
-        Newsom et al. (2019). This function can calculate one VAD profile or a
-        series of VAD profiles depending on the radial velocity input
+        Newsom et al. (2019). This function calculates VAD output for a single PPI scan.
+        vr: 2d array (azimuth x range)
+        ranges: 1d array
+        el: scalar
+        az: 1d array
         """
-        print(np.array(radial_vel).shape)
-        print(type(az), az.shape)
-        if (time is None) and (len(np.array(radial_vel).shape) == 2):
-            times = 1
-            time = [0]
-            vr = np.array([radial_vel])
-        elif (time is None) and (len(np.array(radial_vel).shape) == 3):
-            time = np.arange(np.array(radial_vel).shape[0])
-            vr = np.copy(radial_vel)
-            times = len(time)
-        else:
-            times = len(time)
-            vr = np.copy(radial_vel)
-
+        print("starting calculate_arm_vad")
+        # remove missing radial vel data
         if missing is not None:
             vr[vr == missing] = np.nan
-
+        
+        # calculate xyz coordinates from range/azimuth/elevation
+        # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
         x = ranges[None, :]*np.cos(np.radians(el))*np.sin(np.radians(az[:, None]))
         y = ranges[None, :]*np.cos(np.radians(el))*np.cos(np.radians(az[:, None]))
         z = ranges*np.sin(np.radians(el))
 
-        u = []
-        v = []
-        w = []
-        du = []
-        dv = []
-        dw = []
-        residual = []
-        speed = []
-        wdir = []
-        correlation = []
+        temp_u = np.ones(len(ranges))*np.nan
+        temp_v = np.ones(len(ranges))*np.nan
+        temp_w = np.ones(len(ranges))*np.nan
+        temp_du = np.ones(len(ranges))*np.nan
+        temp_dv = np.ones(len(ranges))*np.nan
+        temp_dw = np.ones(len(ranges))*np.nan
 
-        for j in range(times):
-            temp_u = np.ones(len(ranges))*np.nan
-            temp_v = np.ones(len(ranges))*np.nan
-            temp_w = np.ones(len(ranges))*np.nan
-            temp_du = np.ones(len(ranges))*np.nan
-            temp_dv = np.ones(len(ranges))*np.nan
-            temp_dw = np.ones(len(ranges))*np.nan
+        for i in range(len(ranges)):
+            foo = np.where(~np.isnan(vr[:, i]))
 
-            for i in range(len(ranges)):
-                foo = np.where(~np.isnan(vr[j, :, i]))[0]
-                # need at least 25% of the azimuth radial velocities available
-                if len(foo) <= len(az)/4:
-                    temp_u[i] = np.nan
-                    temp_v[i] = np.nan
-                    temp_w[i] = np.nan
-                    continue
-                print(az[foo])
-                A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo]))**2)
-                A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo])) *\
-                        np.cos(np.deg2rad(az[foo])))
-                A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                        np.sum(np.sin(np.deg2rad(az[foo])))
-                A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[foo]))**2)
-                A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                        np.sum(np.cos(np.deg2rad(az[foo])))
-                A33 = len(az[foo]) * (np.sin(np.deg2rad(el))**2)
+            # need at least 25% of the azimuth radial velocities available
+            if len(foo) <= len(az)/4:
+                temp_u[i] = np.nan
+                temp_v[i] = np.nan
+                temp_w[i] = np.nan
+                continue
 
-                A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
-                invA = np.linalg.inv(A)
+            A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo]))**2)
+            A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo])) *\
+                    np.cos(np.deg2rad(az[foo])))
+            A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
+                    np.sum(np.sin(np.deg2rad(az[foo])))
+            A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[foo]))**2)
+            A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
+                    np.sum(np.cos(np.deg2rad(az[foo])))
+            A33 = len(az[foo]) * (np.sin(np.deg2rad(el))**2)
 
-                temp_du[i] = invA[0, 0]
-                temp_dv[i] = invA[1, 1]
-                temp_dw[i] = invA[2, 2]
+            A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
+            invA = np.linalg.inv(A)
 
-                b1 = np.cos(np.deg2rad(el)) * np.sum(vr[j, foo, i] *\
-                     np.sin(np.deg2rad(az[foo])))
-                b2 = np.cos(np.deg2rad(el)) * np.sum(vr[j, foo, i] *\
-                     np.cos(np.deg2rad(az[foo])))
-                b3 = np.sin(np.deg2rad(el)) * np.sum(vr[j, foo, i])
+            temp_du[i] = invA[0, 0]
+            temp_dv[i] = invA[1, 1]
+            temp_dw[i] = invA[2, 2]
 
-                b = np.array([b1, b2, b3])
+            b1 = np.cos(np.deg2rad(el)) * np.sum(vr[foo, i] *\
+                 np.sin(np.deg2rad(az[foo])))
+            b2 = np.cos(np.deg2rad(el)) * np.sum(vr[foo, i] *\
+                 np.cos(np.deg2rad(az[foo])))
+            b3 = np.sin(np.deg2rad(el)) * np.sum(vr[foo, i])
 
-                temp = invA.dot(b)
-                temp_u[i] = temp[0]
-                temp_v[i] = temp[1]
-                temp_w[i] = temp[2]
+            b = np.array([b1, b2, b3])
 
-            u.append(np.copy(temp_u))
-            v.append(np.copy(temp_v))
-            w.append(np.copy(temp_w))
-            du.append(np.copy(temp_du))
-            dv.append(np.copy(temp_dv))
-            dw.append(np.copy(temp_dw))
+            temp = invA.dot(b)
+            temp_u[i] = temp[0]
+            temp_v[i] = temp[1]
+            temp_w[i] = temp[2]
 
-            speed.append(np.sqrt(temp_u**2 + temp_v**2))
-            temp_wdir = 270 - np.rad2deg(np.arctan2(temp_v, temp_u))
+        # calculate derived products
+        speed = np.sqrt(temp_u**2 + temp_v**2)
+        wdir = 270 - np.rad2deg(np.arctan2(temp_v, temp_u))
+        # mod by 360 to get deg < 360
+        wdir = wdir % 360
 
-            for k in range(len(temp_wdir)):
-                if temp_wdir[k] >= 360:
-                    temp_wdir[k] = temp_wdir[k] - 360
+        residual = np.sqrt(np.nanmean(((((temp_u*x)+(temp_v*y)+((temp_w*z)\
+                        [None, :]))/np.sqrt(x**2+y**2+z**2))-vr)**2, axis=0))
+        u_dot_r = ((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
+        mean_u_dot_r = np.nanmean(((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/\
+                       np.sqrt(x**2+y**2+z**2), axis=0)
+        mean_vr = np.nanmean(vr, axis=0)
+        correlation = np.nanmean((u_dot_r-mean_u_dot_r)*(vr-mean_vr), axis=0)/\
+                           (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
+                            np.sqrt(np.nanmean((vr-mean_vr)**2, axis=0)))
 
-            wdir.append(temp_wdir)
-            residual.append(np.sqrt(np.nanmean(((((temp_u*x)+(temp_v*y)+((temp_w*z)\
-                            [None, :]))/np.sqrt(x**2+y**2+z**2))-vr[j])**2, axis=0)))
-            u_dot_r = ((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
-            mean_u_dot_r = np.nanmean(((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/\
-                           np.sqrt(x**2+y**2+z**2), axis=0)
-            mean_vr = np.nanmean(vr[j], axis=0)
-            correlation.append(np.nanmean((u_dot_r-mean_u_dot_r)*(vr[j]-mean_vr), axis=0)/\
-                               (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
-                                np.sqrt(np.nanmean((vr[j]-mean_vr)**2, axis=0))))
-
-        return cls(u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, time, el, len(az))
+        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, el, len(az))
 
 
     def plot_(self, filename, plot_time=None, title=None):
@@ -388,3 +361,19 @@ class VAD:
         nc_file.history = 'created on ' + dt.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S UTC')
 
         nc_file.close()
+
+class VADSet:
+    """ Class to hold data from a series of VAD calculations """
+    
+    def __init__(self, vads,  mean_cnr, max_cnr, altitude, latitude, longitude, stime, etime):
+        self.vads = vads
+        self.mean_cnr = mean_cnr
+        self.max_cnr = max_cnr
+        self.alt = altitude
+        self.lat = latitude
+        self.lon = longitude
+        self.stime = stime
+        self.etime = etime
+
+    def to_ARM_netcdf(self, filepath):
+        pass # in progress
