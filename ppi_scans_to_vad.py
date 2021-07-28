@@ -18,7 +18,7 @@ import glob
 import argparse
 import datetime as dt
 import numpy as np
-import Lidar_functions
+from vad import VAD
 from ppi import PPI
 
 warnings.simplefilter("ignore")
@@ -55,15 +55,16 @@ def process(ppi_files, max_cnr, final_path):
         # for low elevation angles, VAD output isn't very helpful
         # NEED THIS IF STATEMENT IF THE LIST OF PPIs MIGHT USE A DIFFERENT # OF AZIMUTH ANGLES
         # For this case, SWEX ppis need to have 360 azimuth angles
-        if ppi.elevation < 6 or len(ppi.azimuth) != 360:
+        if ppi.elevation < 6:
             continue
-            
+        print('processing file: ', f, 'az length:', len(ppi.azimuth))
+        print("vr dims:", ppi.vr.shape)
         ppi.threshold_cnr(max_cnr)
         
         vr_all.append(ppi.vr)
         mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
-        stime.append(dt.datetime.strptime(ppi.str_start, '%Y-%m-%d %H:%M:%S.%f').timestamp())
-        etime.append(dt.datetime.strptime(ppi.str_end, '%Y-%m-%d %H:%M:%S.%f').timestamp())
+        stime.append(ppi.starttime.timestamp())
+        etime.append(ppi.endtime.timestamp())
         # good scan, so fill in metadata
         if alt is None:
             alt = ppi.alt
@@ -89,8 +90,8 @@ def process(ppi_files, max_cnr, final_path):
     final_file_name = 'VAD_' + filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
 
-    VAD = Lidar_functions.ARM_VAD(vr_all, ranges, elevation, azimuth)
-    VAD.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
+    vad = VAD.calculate_ARM_VAD(vr_all, ranges, elevation, azimuth)
+    vad.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
 
 def main():
     args = createParser()
