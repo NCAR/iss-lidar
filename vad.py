@@ -16,7 +16,7 @@ def xyz(ranges, el, az):
 
 def non_nan_idxs(vr, i):
     """ This variable is used to index azimuths, but I'm not really sure why """
-    return np.where(~np.isnan(vr[:, i]))
+    return np.where(~np.isnan(vr[:, i]))[0]
 
 def calc_A(el, az, idxs):
     """ Calculate contents of A matrix """
