@@ -6,6 +6,19 @@ import numpy as np
 import netCDF4
 import matplotlib.pyplot as plt
 
+def xyz(ranges, el, az):
+    """ Calculate x, y, and z coordinates from range, elevation, and azimuth """
+    # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
+    x = ranges[None, :]*np.cos(np.radians(el))*np.sin(np.radians(az[:, None]))
+    y = ranges[None, :]*np.cos(np.radians(el))*np.cos(np.radians(az[:, None]))
+    z = ranges*np.sin(np.radians(el))
+    return (x, y, z)
+
+def non_nan_idxs(vr, i):
+    """ This variable is used to index azimuths, but I'm not really sure why """
+    return np.where(~np.isnan(vr[:, i]))
+    
+    
 class VAD:
     """
     This is a class created for VAD data
@@ -42,12 +55,9 @@ class VAD:
         # remove missing radial vel data
         if missing is not None:
             vr[vr == missing] = np.nan
-        
-        # calculate xyz coordinates from range/azimuth/elevation
-        # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
-        x = ranges[None, :]*np.cos(np.radians(el))*np.sin(np.radians(az[:, None]))
-        y = ranges[None, :]*np.cos(np.radians(el))*np.cos(np.radians(az[:, None]))
-        z = ranges*np.sin(np.radians(el))
+            
+        # calculate XYZ coordinates of data
+        x,y,z = xyz(ranges, el, az)
 
         temp_u = np.ones(len(ranges))*np.nan
         temp_v = np.ones(len(ranges))*np.nan
@@ -57,24 +67,24 @@ class VAD:
         temp_dw = np.ones(len(ranges))*np.nan
 
         for i in range(len(ranges)):
-            foo = np.where(~np.isnan(vr[:, i]))
+            idxs = non_nan_idxs(vr, i)
 
             # need at least 25% of the azimuth radial velocities available
-            if len(foo) <= len(az)/4:
+            if len(idxs) <= len(az)/4:
                 temp_u[i] = np.nan
                 temp_v[i] = np.nan
                 temp_w[i] = np.nan
                 continue
 
-            A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo]))**2)
-            A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[foo])) *\
-                    np.cos(np.deg2rad(az[foo])))
+            A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs]))**2)
+            A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *\
+                    np.cos(np.deg2rad(az[idxs])))
             A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                    np.sum(np.sin(np.deg2rad(az[foo])))
-            A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[foo]))**2)
+                    np.sum(np.sin(np.deg2rad(az[idxs])))
+            A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[idxs]))**2)
             A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                    np.sum(np.cos(np.deg2rad(az[foo])))
-            A33 = len(az[foo]) * (np.sin(np.deg2rad(el))**2)
+                    np.sum(np.cos(np.deg2rad(az[idxs])))
+            A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
 
             A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
             invA = np.linalg.inv(A)
@@ -83,11 +93,11 @@ class VAD:
             temp_dv[i] = invA[1, 1]
             temp_dw[i] = invA[2, 2]
 
-            b1 = np.cos(np.deg2rad(el)) * np.sum(vr[foo, i] *\
-                 np.sin(np.deg2rad(az[foo])))
-            b2 = np.cos(np.deg2rad(el)) * np.sum(vr[foo, i] *\
-                 np.cos(np.deg2rad(az[foo])))
-            b3 = np.sin(np.deg2rad(el)) * np.sum(vr[foo, i])
+            b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+                 np.sin(np.deg2rad(az[idxs])))
+            b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+                 np.cos(np.deg2rad(az[idxs])))
+            b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
 
             b = np.array([b1, b2, b3])
 
