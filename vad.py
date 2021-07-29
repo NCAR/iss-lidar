@@ -17,8 +17,33 @@ def xyz(ranges, el, az):
 def non_nan_idxs(vr, i):
     """ This variable is used to index azimuths, but I'm not really sure why """
     return np.where(~np.isnan(vr[:, i]))
-    
-    
+
+def calc_A(el, az, idxs):
+    """ Calculate contents of A matrix """
+    A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs]))**2)
+    A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *\
+            np.cos(np.deg2rad(az[idxs])))
+    A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
+            np.sum(np.sin(np.deg2rad(az[idxs])))
+    A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[idxs]))**2)
+    A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
+            np.sum(np.cos(np.deg2rad(az[idxs])))
+    A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
+
+    A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
+    return A
+
+def calc_b(el, az, vr, idxs, i):
+    """ Calculate contents of b matrix """
+    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+         np.sin(np.deg2rad(az[idxs])))
+    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+         np.cos(np.deg2rad(az[idxs])))
+    b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
+
+    b = np.array([b1, b2, b3])
+    return b
+
 class VAD:
     """
     This is a class created for VAD data
@@ -51,7 +76,6 @@ class VAD:
         el: scalar
         az: 1d array
         """
-        print("starting calculate_arm_vad")
         # remove missing radial vel data
         if missing is not None:
             vr[vr == missing] = np.nan
@@ -75,33 +99,17 @@ class VAD:
                 temp_v[i] = np.nan
                 temp_w[i] = np.nan
                 continue
-
-            A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs]))**2)
-            A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *\
-                    np.cos(np.deg2rad(az[idxs])))
-            A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                    np.sum(np.sin(np.deg2rad(az[idxs])))
-            A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[idxs]))**2)
-            A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-                    np.sum(np.cos(np.deg2rad(az[idxs])))
-            A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
-
-            A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
+                
+            A = calc_A(el, az, idxs)
             invA = np.linalg.inv(A)
 
             temp_du[i] = invA[0, 0]
             temp_dv[i] = invA[1, 1]
             temp_dw[i] = invA[2, 2]
-
-            b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
-                 np.sin(np.deg2rad(az[idxs])))
-            b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
-                 np.cos(np.deg2rad(az[idxs])))
-            b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
-
-            b = np.array([b1, b2, b3])
-
+            
+            b = calc_b(el, az, vr, idxs, i)
             temp = invA.dot(b)
+
             temp_u[i] = temp[0]
             temp_v[i] = temp[1]
             temp_w[i] = temp[2]

@@ -3,7 +3,7 @@ import pickle
 import numpy.ma as ma
 
 from ppi import PPI
-from vad import xyz, non_nan_idxs
+from vad import xyz, non_nan_idxs, calc_A, calc_b
 from vad import VAD
 
 @pytest.fixture
@@ -61,6 +61,34 @@ def test_non_nan_idxs(ppi):
     idxs = non_nan_idxs(ppi.vr, 3)
     saved_idxs = pickle.load(open("pickles/foo3.p", "rb"))
     assert ma.allequal(idxs, saved_idxs)
+
+def test_calc_A(ppi):
+    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 0))
+    saved_A = pickle.load(open("pickles/A_0.p", "rb"))
+    assert ma.allequal(A, saved_A)
+    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 1))
+    saved_A = pickle.load(open("pickles/A_1.p", "rb"))
+    assert ma.allequal(A, saved_A)
+    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 2))
+    saved_A = pickle.load(open("pickles/A_2.p", "rb"))
+    assert ma.allequal(A, saved_A)
+    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 3))
+    saved_A = pickle.load(open("pickles/A_3.p", "rb"))
+    assert ma.allequal(A, saved_A)
+
+def test_calc_b(ppi):
+    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 0), 0)
+    saved_b = pickle.load(open("pickles/b_0.p", "rb"))
+    assert ma.allequal(b, saved_b)
+    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 1), 1)
+    saved_b = pickle.load(open("pickles/b_1.p", "rb"))
+    assert ma.allequal(b, saved_b)
+    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 2), 2)
+    saved_b = pickle.load(open("pickles/b_2.p", "rb"))
+    assert ma.allequal(b, saved_b)
+    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 3), 3)
+    saved_b = pickle.load(open("pickles/b_3.p", "rb"))
+    assert ma.allequal(b, saved_b)
 
 def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     vad = VAD.calculate_ARM_VAD(ppi.vr, ppi.ranges, ppi.elevation, ppi.azimuth)
