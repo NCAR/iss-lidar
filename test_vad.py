@@ -1,6 +1,7 @@
 import pytest
 import pickle
 import numpy.ma as ma
+import numpy as np
 
 from ppi import PPI
 from vad import xyz, non_nan_idxs, calc_A, calc_b
@@ -94,16 +95,16 @@ def test_calc_b(ppi):
 def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     vad = VAD.calculate_ARM_VAD(ppi.vr, ppi.ranges, ppi.elevation, ppi.azimuth)
     saved_u, saved_v, saved_w = final_vad_winds
-    assert ma.allequal(vad.u, saved_u)
-    assert ma.allequal(vad.v, saved_v)
-    assert ma.allequal(vad.w, saved_w)
+    assert np.array_equal(vad.u, saved_u, equal_nan=True)
+    assert np.array_equal(vad.v, saved_v, equal_nan=True)
+    assert np.array_equal(vad.w, saved_w, equal_nan=True)
     saved_du, saved_dv, saved_dw = final_vad_errs
-    assert ma.allequal(vad.du, saved_du)
-    assert ma.allequal(vad.dv, saved_dv)
-    assert ma.allequal(vad.dw, saved_dw)
+    assert np.array_equal(vad.du, saved_du, equal_nan=True)
+    assert np.array_equal(vad.dv, saved_dv, equal_nan=True)
+    assert np.array_equal(vad.dw, saved_dw, equal_nan=True)
     saved_wspd, saved_wdir, saved_res, saved_cor = derived_products
-    assert ma.allequal(vad.speed, saved_wspd)
-    assert ma.allequal(vad.wdir, saved_wdir)
-    assert ma.allequal(vad.residual, saved_res)
-    assert ma.allequal(vad.correlation, saved_cor)
+    assert np.array_equal(vad.speed, saved_wspd, equal_nan=True)
+    assert np.array_equal(vad.wdir, saved_wdir, equal_nan=True)
+    assert np.array_equal(vad.residual, saved_res, equal_nan=True)
+    assert np.array_equal(vad.correlation, saved_cor, equal_nan=True)
 
