@@ -46,9 +46,6 @@ def process(ppi_files, max_cnr, final_path):
     alt = None
     lat = None
     lon = None
-    ranges = None
-    elevation = None
-    azimuth = None
 
     for f in ppi_files:
         ppi = PPI.fromFile(f)
@@ -75,12 +72,6 @@ def process(ppi_files, max_cnr, final_path):
             lat = ppi.lat
         if lon is None:
             lon = ppi.lon
-        if ranges is None:
-            ranges = ppi.ranges
-        if elevation is None:
-            elevation = ppi.elevation
-        if azimuth is None:
-            azimuth = ppi.azimuth
 
     if not vr_all: 
         # vr_all is empty if no files had ok elevation and azimuth. can't continue processing.
