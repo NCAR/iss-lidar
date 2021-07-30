@@ -10,6 +10,7 @@ from vad import VAD
 def ppi():
     """ Read in PPI file """
     ppi = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    ppi.threshold_cnr(-22) # use default threshold val in ppi_scans_to_vad of -22
     return ppi
 
 @pytest.fixture
