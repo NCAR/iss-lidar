@@ -63,7 +63,7 @@ def process(ppi_files, max_cnr, final_path):
         etime.append(ppi.endtime.timestamp())
         
         # generate VAD for this timestep
-        vad = VAD.calculate_ARM_VAD(ppi.vr, ppi.ranges, ppi.elevation, ppi.azimuth)
+        vad = VAD.calculate_ARM_VAD(ppi)
         vads.append(vad)
         # good scan, so fill in metadata
         if alt is None:

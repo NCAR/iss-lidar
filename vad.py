@@ -67,7 +67,7 @@ class VAD:
         self.nbeams = nbeams
 
     @classmethod
-    def calculate_ARM_VAD(cls, vr, ranges, el, az, time=None, missing=None):
+    def calculate_ARM_VAD(cls, ppi, time=None, missing=None):
         """
         This function calculates VAD wind profiles using the technique shown in
         Newsom et al. (2019). This function calculates VAD output for a single PPI scan.
@@ -78,36 +78,36 @@ class VAD:
         """
         # remove missing radial vel data
         if missing is not None:
-            vr[vr == missing] = np.nan
+            ppi.vr[ppi.vr == missing] = np.nan
             
         # calculate XYZ coordinates of data
-        x,y,z = xyz(ranges, el, az)
+        x,y,z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
 
-        temp_u = np.ones(len(ranges))*np.nan
-        temp_v = np.ones(len(ranges))*np.nan
-        temp_w = np.ones(len(ranges))*np.nan
-        temp_du = np.ones(len(ranges))*np.nan
-        temp_dv = np.ones(len(ranges))*np.nan
-        temp_dw = np.ones(len(ranges))*np.nan
+        temp_u = np.ones(len(ppi.ranges))*np.nan
+        temp_v = np.ones(len(ppi.ranges))*np.nan
+        temp_w = np.ones(len(ppi.ranges))*np.nan
+        temp_du = np.ones(len(ppi.ranges))*np.nan
+        temp_dv = np.ones(len(ppi.ranges))*np.nan
+        temp_dw = np.ones(len(ppi.ranges))*np.nan
 
-        for i in range(len(ranges)):
-            idxs = non_nan_idxs(vr, i)
+        for i in range(len(ppi.ranges)):
+            idxs = non_nan_idxs(ppi.vr, i)
 
             # need at least 25% of the azimuth radial velocities available
-            if len(idxs) <= len(az)/4:
+            if len(idxs) <= len(ppi.azimuth)/4:
                 temp_u[i] = np.nan
                 temp_v[i] = np.nan
                 temp_w[i] = np.nan
                 continue
                 
-            A = calc_A(el, az, idxs)
+            A = calc_A(ppi.elevation, ppi.azimuth, idxs)
             invA = np.linalg.inv(A)
 
             temp_du[i] = invA[0, 0]
             temp_dv[i] = invA[1, 1]
             temp_dw[i] = invA[2, 2]
             
-            b = calc_b(el, az, vr, idxs, i)
+            b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
             temp = invA.dot(b)
 
             temp_u[i] = temp[0]
@@ -121,16 +121,16 @@ class VAD:
         wdir = wdir % 360
 
         residual = np.sqrt(np.nanmean(((((temp_u*x)+(temp_v*y)+((temp_w*z)\
-                        [None, :]))/np.sqrt(x**2+y**2+z**2))-vr)**2, axis=0))
+                        [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2, axis=0))
         u_dot_r = ((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
         mean_u_dot_r = np.nanmean(((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/\
                        np.sqrt(x**2+y**2+z**2), axis=0)
-        mean_vr = np.nanmean(vr, axis=0)
-        correlation = np.nanmean((u_dot_r-mean_u_dot_r)*(vr-mean_vr), axis=0)/\
+        mean_vr = np.nanmean(ppi.vr, axis=0)
+        correlation = np.nanmean((u_dot_r-mean_u_dot_r)*(ppi.vr-mean_vr), axis=0)/\
                            (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
-                            np.sqrt(np.nanmean((vr-mean_vr)**2, axis=0)))
+                            np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
 
-        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, el, len(az))
+        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, ppi.elevation, len(ppi.azimuth))
 
 
     def plot_(self, filename, plot_time=None, title=None):
