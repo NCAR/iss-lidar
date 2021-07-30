@@ -58,7 +58,6 @@ def process(ppi_files, max_cnr, final_path):
         # For this case, SWEX ppis need to have 360 azimuth angles
         if ppi.elevation < 6:
             continue
-        print('processing file: ', f, 'az length:', len(ppi.azimuth))
         ppi.threshold_cnr(max_cnr)
         
         vr_all.append(ppi.vr)
