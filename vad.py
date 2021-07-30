@@ -394,4 +394,130 @@ class VADSet:
         self.etime = etime
 
     def to_ARM_netcdf(self, filepath):
-        pass # in progress
+        str_start_time = dt.datetime.fromtimestamp(self.stime[0]).strftime('%Y-%m-%d %H:%M:%S')
+        str_day_start_time = dt.datetime.fromtimestamp(self.stime[0]).strftime('%Y-%m-%d')
+        secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',\
+                                                '%Y-%m-%d %H:%M:%S').timestamp()
+        nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
+        nc_file.createDimension('time', None)
+        # still currently assuming that all files in a VADSet have the same heights
+        nc_file.createDimension('height', len(self.vads[0].z))
+        nc_file.createDimension('bound', 2)
+        base_time = nc_file.createVariable('base_time', 'i')
+        base_time[:] = self.stime[0]
+        base_time.string = str_start_time
+        base_time.long_name = 'Base time in Epoch'
+        base_time.units = 'seconds since 1970-01-01 00:00:00'
+        base_time.ancillary_variables = 'time_offset'
+        time_offset = nc_file.createVariable('time_offset', 'd', 'time')
+        time_offset[:] = np.array(self.stime) - self.stime[0]
+        time_offset.long_name = 'Time offset from base_time'
+        time_offset.units = 'seconds since '+ str_start_time
+        time_offset.ancillary_variables = "base_time"
+        stimes = nc_file.createVariable('time', 'd', 'time')
+        stimes[:] = np.array(self.stime) - secs_midnight_time
+        stimes.long_name = 'Time offset from midnight'
+        stimes.units = 'seconds since ' + str_day_start_time + ' 00:00:00'
+        stimes.bounds = 'time_bounds'
+        time_bounds = nc_file.createVariable('time_bounds', 'd', ('time', 'bound'))
+        time_bounds[:, :] = list(zip(self.stime, self.etime))
+        height = nc_file.createVariable('height', 'f', 'height')
+        height[:] = self.vads[0].z
+        height.long_name = 'Height above ground level'
+        height.units = 'm'
+        height.standard_name = 'height'
+        scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
+        scan_duration[:] = np.subtract(self.etime, self.stime)
+        scan_duration.long_name = 'PPI scan duration'
+        scan_duration.units = 'second'
+        elevation_angle = nc_file.createVariable('elevation_angle', 'f', 'time')
+        elevation_angle[:] = [i.el for i in self.vads]
+        elevation_angle.long_name = 'Beam elevation angle'
+        elevation_angle.units = 'degree'
+        nbeams = nc_file.createVariable('nbeams', 'i', 'time')
+        nbeams[:] = [i.nbeams for i in self.vads]
+        nbeams.long_name = 'Number of beams (azimuth angles) used in wind vector estimations'
+        nbeams.units = 'unitless'
+        u = nc_file.createVariable('u', 'f', ('time', 'height'))
+        u[:, :] = np.array([i.u for i in self.vads])
+        u.long_name = 'Eastward component of wind vector'
+        u.units = 'm/s'
+        u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
+        u_error[:, :] = np.array([i.du for i in self.vads])
+        u_error.long_name = 'Estimated error in eastward component of wind vector'
+        u_error.units = 'm/s'
+        v = nc_file.createVariable('v', 'f', ('time', 'height'))
+        v[:, :] = np.array([i.v for i in self.vads])
+        v.long_name = 'Northward component of wind vector'
+        v.units = 'm/s'
+        v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
+        v_error[:, :] = np.array([i.dv for i in self.vads])
+        v_error.long_name = 'Estimated error in northward component of wind vector'
+        v_error.units = 'm/s'
+        w = nc_file.createVariable('w', 'f', ('time', 'height'))
+        w[:, :] = np.array([i.w for i in self.vads])
+        w.long_name = 'Vertical component of wind vector'
+        w.units = 'm/s'
+        w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
+        w_error[:, :] = np.array([i.dw for i in self.vads])
+        w_error.long_name = 'Estimated error in vertical component of wind vector'
+        w_error.units = 'm/s'
+        wind_speed = nc_file.createVariable('wind_speed', 'f', ('time', 'height'))
+        wind_speed[:, :] = np.array([i.speed for i in self.vads])
+        wind_speed.long_name = 'Wind speed'
+        wind_speed.units = 'm/s'
+        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f', ('time', 'height'))
+        # not currently calculating wind speed error?
+        wind_speed_error[:, :] = wind_speed[:,:] * np.nan
+        wind_speed_error.long_name = 'Wind speed error'
+        wind_speed_error.units = 'm/s'
+        wind_direction = nc_file.createVariable('wind_direction', 'f', ('time', 'height'))
+        wind_direction[:, :] = np.array([i.wdir for i in self.vads])
+        wind_direction.long_name = 'Wind direction'
+        wind_direction.units = 'degree'
+        wind_direction_error = nc_file.createVariable('wind_direction_error', 'f', ('time',
+                                                                                    'height'))
+        wind_direction_error[:, :] = wind_direction[:,:] * np.nan
+        wind_direction_error.long_name = 'Wind direction error'
+        wind_direction_error.units = 'm/s'
+        residual = nc_file.createVariable('residual', 'f', ('time', 'height'))
+        residual[:, :] = np.array([i.residual for i in self.vads])
+        residual.long_name = 'Fit residual'
+        residual.units = 'm/s'
+        correlation = nc_file.createVariable('correlation', 'f', ('time', 'height'))
+        correlation[:, :] = np.array([i.correlation for i in self.vads])
+        correlation.long_name = 'Fit correlation coefficient'
+        correlation.units = 'unitless'
+        mean_snr = nc_file.createVariable('mean_snr', 'f', ('time', 'height'))
+        mean_snr[:, :] = self.mean_cnr
+        mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
+        mean_snr.units = 'unitless'
+        snr_threshold = nc_file.createVariable('snr_threshold', 'f')
+        snr_threshold[:] = self.max_cnr
+        snr_threshold.long_name = 'SNR threshold'
+        snr_threshold.units = 'unitless'
+        lat = nc_file.createVariable('lat', 'f')
+        lat[:] = self.lat
+        lat.long_name = 'North latitude'
+        lat.units = 'degree_N'
+        lat.valid_min = -90
+        lat.valid_max = 90
+        lat.standard_name = 'latitude'
+        lon = nc_file.createVariable('lon', 'f')
+        lon[:] = self.lon
+        lon.long_name = 'East longitude'
+        lon.units = 'degree_E'
+        lon.valid_min = -180
+        lon.valid_max = 180
+        lon.standard_name = 'longitude'
+        alt = nc_file.createVariable('alt', 'f')
+        alt[:] = self.alt
+        alt.long_name = 'Altitude above mean sea level'
+        alt.units = 'm'
+        alt.standard_name = 'altitude'
+
+        nc_file.Conventions = 'ARM-1.1'
+        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S UTC')
+
+        nc_file.close()
+
