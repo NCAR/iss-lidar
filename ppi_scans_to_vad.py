@@ -36,7 +36,7 @@ def selectFiles(path):
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
-def process(ppi_files, max_cnr, final_path):
+def process(ppi_files, max_cnr, final_path, prefix=None):
     stime = []
     etime = []
     vr_all = []
@@ -81,7 +81,10 @@ def process(ppi_files, max_cnr, final_path):
         filename_time = stime[0].strftime('%Y%m%d')
     else:
         filename_time = stime[0].strftime('%Y%m%d_%H%M%S')
-    final_file_name = 'VAD_' + filename_time + '.nc'
+    final_file_name = 'VAD_'
+    if prefix:
+        final_file_name += prefix + '_'
+    final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
     vadset = VADSet(vads, mean_cnr, max_cnr, alt, lat, lon, stime, etime)
