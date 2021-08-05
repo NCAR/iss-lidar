@@ -59,8 +59,8 @@ def process(ppi_files, max_cnr, final_path):
         
         vr_all.append(ppi.vr)
         mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
-        stime.append(ppi.starttime.timestamp())
-        etime.append(ppi.endtime.timestamp())
+        stime.append(ppi.starttime)
+        etime.append(ppi.endtime)
         
         # generate VAD for this timestep
         vad = VAD.calculate_ARM_VAD(ppi)
@@ -78,9 +78,9 @@ def process(ppi_files, max_cnr, final_path):
         return
 
     if len(ppi_files) > 1:
-        filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d')
+        filename_time = stime[0].strftime('%Y%m%d')
     else:
-        filename_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y%m%d_%H%M%S')
+        filename_time = stime[0].strftime('%Y%m%d_%H%M%S')
     final_file_name = 'VAD_' + filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     

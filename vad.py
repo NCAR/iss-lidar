@@ -390,12 +390,13 @@ class VADSet:
         self.alt = altitude
         self.lat = latitude
         self.lon = longitude
-        self.stime = stime
+        self.stime = stime # lists of datetime objects, tz-aware
         self.etime = etime
 
     def to_ARM_netcdf(self, filepath):
-        str_start_time = dt.datetime.fromtimestamp(self.stime[0]).strftime('%Y-%m-%d %H:%M:%S')
-        str_day_start_time = dt.datetime.fromtimestamp(self.stime[0]).strftime('%Y-%m-%d')
+        str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
+        print(str_start_time, type(str_start_time))
+        str_day_start_time = self.stime[0].strftime('%Y-%m-%d')
         secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',\
                                                 '%Y-%m-%d %H:%M:%S').timestamp()
         nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
@@ -404,30 +405,30 @@ class VADSet:
         nc_file.createDimension('height', len(self.vads[0].z))
         nc_file.createDimension('bound', 2)
         base_time = nc_file.createVariable('base_time', 'i')
-        base_time[:] = self.stime[0]
         base_time.string = str_start_time
         base_time.long_name = 'Base time in Epoch'
-        base_time.units = 'seconds since 1970-01-01 00:00:00'
+        base_time.units = 'seconds since 1970-01-01 00:00:00 UTC'
         base_time.ancillary_variables = 'time_offset'
+        base_time[:] = netCDF4.date2num(self.stime[0], base_time.units)
         time_offset = nc_file.createVariable('time_offset', 'd', 'time')
-        time_offset[:] = np.array(self.stime) - self.stime[0]
         time_offset.long_name = 'Time offset from base_time'
         time_offset.units = 'seconds since '+ str_start_time
         time_offset.ancillary_variables = "base_time"
+        time_offset[:] = netCDF4.date2num(self.stime, time_offset.units)
         stimes = nc_file.createVariable('time', 'd', 'time')
-        stimes[:] = np.array(self.stime) - secs_midnight_time
         stimes.long_name = 'Time offset from midnight'
-        stimes.units = 'seconds since ' + str_day_start_time + ' 00:00:00'
+        stimes.units = 'seconds since ' + str_day_start_time + ' 00:00:00 UTC'
         stimes.bounds = 'time_bounds'
+        stimes[:] = netCDF4.date2num(self.stime, stimes.units)
         time_bounds = nc_file.createVariable('time_bounds', 'd', ('time', 'bound'))
-        time_bounds[:, :] = list(zip(self.stime, self.etime))
+        time_bounds[:, :] = list(zip(netCDF4.date2num(self.stime, base_time.units), netCDF4.date2num(self.etime, base_time.units)))
         height = nc_file.createVariable('height', 'f', 'height')
         height[:] = self.vads[0].z
         height.long_name = 'Height above ground level'
         height.units = 'm'
         height.standard_name = 'height'
         scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
-        scan_duration[:] = np.subtract(self.etime, self.stime)
+        scan_duration[:] = [(i[0] - i[1]).total_seconds() for i in zip(self.etime, self.stime)]
         scan_duration.long_name = 'PPI scan duration'
         scan_duration.units = 'second'
         elevation_angle = nc_file.createVariable('elevation_angle', 'f', 'time')
