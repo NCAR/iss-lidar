@@ -49,8 +49,7 @@ class VAD:
     This is a class created for VAD data
     """
 
-    def __init__(self, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, stime, etime, el,
-                 nbeams, alt, lat, lon):
+    def __init__(self, ppi, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation):
         self.u = np.array(u)
         self.v = np.array(v)
         self.w = np.array(w)
@@ -62,13 +61,13 @@ class VAD:
         self.z = z
         self.residual = np.array(residual)
         self.correlation = np.array(correlation)
-        self.stime = stime
-        self.etime = etime
-        self.el = el
-        self.nbeams = nbeams
-        self.alt = alt
-        self.lat = lat
-        self.lon = lon
+        self.stime = ppi.starttime
+        self.etime = ppi.endtime
+        self.el = ppi.elevation
+        self.nbeams = len(ppi.azimuth)
+        self.alt = ppi.alt
+        self.lat = ppi.lat
+        self.lon = ppi.lon
 
     @classmethod
     def calculate_ARM_VAD(cls, ppi, missing=None):
@@ -134,9 +133,8 @@ class VAD:
                            (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
                             np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
 
-        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw,
-                   z, residual, correlation, ppi.starttime, ppi.endtime,
-                   ppi.elevation, len(ppi.azimuth), ppi.alt, ppi.lat, ppi.lon)
+        return cls(ppi, temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw,
+                   z, residual, correlation)
 
 
     def plot_(self, filename, plot_time=None, title=None):
