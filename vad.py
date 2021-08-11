@@ -87,54 +87,54 @@ class VAD:
         # calculate XYZ coordinates of data
         x,y,z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
 
-        temp_u = np.ones(len(ppi.ranges))*np.nan
-        temp_v = np.ones(len(ppi.ranges))*np.nan
-        temp_w = np.ones(len(ppi.ranges))*np.nan
-        temp_du = np.ones(len(ppi.ranges))*np.nan
-        temp_dv = np.ones(len(ppi.ranges))*np.nan
-        temp_dw = np.ones(len(ppi.ranges))*np.nan
+        u = np.ones(len(ppi.ranges))*np.nan
+        v = np.ones(len(ppi.ranges))*np.nan
+        w = np.ones(len(ppi.ranges))*np.nan
+        du = np.ones(len(ppi.ranges))*np.nan
+        dv = np.ones(len(ppi.ranges))*np.nan
+        dw = np.ones(len(ppi.ranges))*np.nan
 
         for i in range(len(ppi.ranges)):
             idxs = non_nan_idxs(ppi.vr, i)
 
             # need at least 25% of the azimuth radial velocities available
             if len(idxs) <= len(ppi.azimuth)/4:
-                temp_u[i] = np.nan
-                temp_v[i] = np.nan
-                temp_w[i] = np.nan
+                u[i] = np.nan
+                v[i] = np.nan
+                w[i] = np.nan
                 continue
                 
             A = calc_A(ppi.elevation, ppi.azimuth, idxs)
             invA = np.linalg.inv(A)
 
-            temp_du[i] = invA[0, 0]
-            temp_dv[i] = invA[1, 1]
-            temp_dw[i] = invA[2, 2]
+            du[i] = invA[0, 0]
+            dv[i] = invA[1, 1]
+            dw[i] = invA[2, 2]
             
             b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
             temp = invA.dot(b)
 
-            temp_u[i] = temp[0]
-            temp_v[i] = temp[1]
-            temp_w[i] = temp[2]
+            u[i] = temp[0]
+            v[i] = temp[1]
+            w[i] = temp[2]
 
         # calculate derived products
-        speed = np.sqrt(temp_u**2 + temp_v**2)
-        wdir = 270 - np.rad2deg(np.arctan2(temp_v, temp_u))
+        speed = np.sqrt(u**2 + v**2)
+        wdir = 270 - np.rad2deg(np.arctan2(v, u))
         # mod by 360 to get deg < 360
         wdir = wdir % 360
 
-        residual = np.sqrt(np.nanmean(((((temp_u*x)+(temp_v*y)+((temp_w*z)\
+        residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)\
                         [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2, axis=0))
-        u_dot_r = ((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
-        mean_u_dot_r = np.nanmean(((temp_u*x)+(temp_v*y)+((temp_w*z)[None, :]))/\
+        u_dot_r = ((u*x)+(v*y)+((w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
+        mean_u_dot_r = np.nanmean(((u*x)+(v*y)+((w*z)[None, :]))/\
                        np.sqrt(x**2+y**2+z**2), axis=0)
         mean_vr = np.nanmean(ppi.vr, axis=0)
         correlation = np.nanmean((u_dot_r-mean_u_dot_r)*(ppi.vr-mean_vr), axis=0)/\
                            (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
                             np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
 
-        return cls(ppi, temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw,
+        return cls(ppi, u, v, w, speed, wdir, du, dv, dw,
                    z, residual, correlation)
 
 
