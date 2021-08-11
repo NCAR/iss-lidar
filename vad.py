@@ -68,6 +68,7 @@ class VAD:
         self.alt = ppi.alt
         self.lat = ppi.lat
         self.lon = ppi.lon
+        self.mean_cnr = ppi.mean_cnr()
 
     @classmethod
     def calculate_ARM_VAD(cls, ppi, missing=None):
@@ -387,9 +388,9 @@ class VAD:
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
     
-    def __init__(self, vads,  mean_cnr, max_cnr):
+    def __init__(self, vads, max_cnr):
         self.vads = vads
-        self.mean_cnr = mean_cnr
+        self.mean_cnr = [i.mean_cnr for i in self.vads]
         self.max_cnr = max_cnr
         # use any vad for location, presumably it doesn't change
         self.alt = vads[0].alt

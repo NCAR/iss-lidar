@@ -37,7 +37,6 @@ def selectFiles(path):
     return sorted(list(ppi_files))
 
 def process(ppi_files, max_cnr, final_path, prefix=None):
-    mean_cnr = []
     vads = []
 
     for f in ppi_files:
@@ -49,8 +48,6 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
         if ppi.elevation < 6:
             continue
         ppi.threshold_cnr(max_cnr)
-        
-        mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
         
         # generate VAD for this timestep
         vad = VAD.calculate_ARM_VAD(ppi)
@@ -70,7 +67,7 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
     final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
-    vadset = VADSet(vads, mean_cnr, max_cnr)
+    vadset = VADSet(vads, max_cnr)
     vadset.to_ARM_netcdf(final_file_path)
 
 def main():

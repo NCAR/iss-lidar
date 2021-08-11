@@ -29,6 +29,10 @@ class PPI:
         """ Set vr to nan if cnr is below threshold """
         self.vr = ma.masked_where(self.cnr < max_cnr, self.vr)
 
+    def mean_cnr(self):
+        """ Return mean value of CNR """
+        return np.nanmean(self.cnr, axis=0)
+
 
 def test_threshold_cnr():
     vel = ma.arange(1,20)
