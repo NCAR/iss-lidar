@@ -49,7 +49,7 @@ class VAD:
     This is a class created for VAD data
     """
 
-    def __init__(self, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, time, el,
+    def __init__(self, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, stime, etime, el,
                  nbeams, alt, lat, lon):
         self.u = np.array(u)
         self.v = np.array(v)
@@ -62,7 +62,8 @@ class VAD:
         self.z = z
         self.residual = np.array(residual)
         self.correlation = np.array(correlation)
-        self.time = time
+        self.stime = stime
+        self.etime = etime
         self.el = el
         self.nbeams = nbeams
         self.alt = alt
@@ -70,7 +71,7 @@ class VAD:
         self.lon = lon
 
     @classmethod
-    def calculate_ARM_VAD(cls, ppi, time=None, missing=None):
+    def calculate_ARM_VAD(cls, ppi, missing=None):
         """
         This function calculates VAD wind profiles using the technique shown in
         Newsom et al. (2019). This function calculates VAD output for a single PPI scan.
@@ -133,7 +134,9 @@ class VAD:
                            (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
                             np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
 
-        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, ppi.elevation, len(ppi.azimuth), ppi.alt, ppi.lat, ppi.lon)
+        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw,
+                   z, residual, correlation, ppi.starttime, ppi.endtime,
+                   ppi.elevation, len(ppi.azimuth), ppi.alt, ppi.lat, ppi.lon)
 
 
     def plot_(self, filename, plot_time=None, title=None):
@@ -386,7 +389,7 @@ class VAD:
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
     
-    def __init__(self, vads,  mean_cnr, max_cnr, stime, etime):
+    def __init__(self, vads,  mean_cnr, max_cnr):
         self.vads = vads
         self.mean_cnr = mean_cnr
         self.max_cnr = max_cnr
@@ -394,8 +397,9 @@ class VADSet:
         self.alt = vads[0].alt
         self.lat = vads[0].lat
         self.lon = vads[0].lon
-        self.stime = stime # lists of datetime objects, tz-aware
-        self.etime = etime
+        # lists of datetime objects, tz-aware
+        self.stime = [i.stime for i in self.vads] 
+        self.etime = [i.etime for i in self.vads]
 
     def to_ARM_netcdf(self, filepath):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')

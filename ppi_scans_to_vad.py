@@ -37,8 +37,6 @@ def selectFiles(path):
     return sorted(list(ppi_files))
 
 def process(ppi_files, max_cnr, final_path, prefix=None):
-    stime = []
-    etime = []
     vr_all = []
     mean_cnr = []
     vads = []
@@ -55,28 +53,26 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
         
         vr_all.append(ppi.vr)
         mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
-        stime.append(ppi.starttime)
-        etime.append(ppi.endtime)
         
         # generate VAD for this timestep
         vad = VAD.calculate_ARM_VAD(ppi)
         vads.append(vad)
 
-    if not vr_all: 
-        # vr_all is empty if no files had ok elevation and azimuth. can't continue processing.
+    if not vads: 
+        # didn't successfully create any vads. can't continue processing.
         return
 
     if len(ppi_files) > 1:
-        filename_time = stime[0].strftime('%Y%m%d')
+        filename_time = vads[0].stime.strftime('%Y%m%d')
     else:
-        filename_time = stime[0].strftime('%Y%m%d_%H%M%S')
+        filename_time = vads[0].stime.strftime('%Y%m%d_%H%M%S')
     final_file_name = 'VAD_'
     if prefix:
         final_file_name += prefix + '_'
     final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
-    vadset = VADSet(vads, mean_cnr, max_cnr, stime, etime)
+    vadset = VADSet(vads, mean_cnr, max_cnr)
     vadset.to_ARM_netcdf(final_file_path)
 
 def main():
