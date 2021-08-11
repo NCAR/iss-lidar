@@ -7,9 +7,6 @@ Carol Costanza
 
 Output VAD winds into ARM netCDF format from cfradial format
 Program works for either 1 cfradial file or multiple within 1 day
-
-EXAMPLE RUN FROM COMMAND LINE
-./ppi_scans_to_vad.py 'path_to_cfradial' 'path_nc_file_dest' 'max_cnr'
 """
 import os
 import sys
@@ -26,7 +23,7 @@ np.set_printoptions(threshold=np.inf)
 
 def createParser():
     parser = argparse.ArgumentParser(description="Generate netCDF of VAD winds from PPI scans")
-    parser.add_argument("--max_cnr", default=-22, type=float, help="threshold cnr below this value")
+    parser.add_argument("--min_cnr", default=-22, type=float, help="threshold cnr below this value")
     parser.add_argument("ppifiles", help="ppi file(s) for input")
     parser.add_argument("destdir", help="directory to save VAD files to")
     return parser.parse_args()
@@ -36,7 +33,7 @@ def selectFiles(path):
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
-def process(ppi_files, max_cnr, final_path, prefix=None):
+def process(ppi_files, min_cnr, final_path, prefix=None):
     vads = []
 
     for f in ppi_files:
@@ -47,7 +44,7 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
         # For this case, SWEX ppis need to have 360 azimuth angles
         if ppi.elevation < 6:
             continue
-        ppi.threshold_cnr(max_cnr)
+        ppi.threshold_cnr(min_cnr)
         
         # generate VAD for this timestep
         vad = VAD.calculate_ARM_VAD(ppi)
@@ -67,13 +64,13 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
     final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
-    vadset = VADSet(vads, max_cnr)
+    vadset = VADSet(vads, min_cnr)
     vadset.to_ARM_netcdf(final_file_path)
 
 def main():
     args = createParser()
     ppi_scans = selectFiles(args.ppifiles)
-    process(ppi_scans, args.max_cnr, args.destdir)
+    process(ppi_scans, args.min_cnr, args.destdir)
 
 if __name__=="__main__":
     main()
