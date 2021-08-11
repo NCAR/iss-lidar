@@ -54,7 +54,6 @@ def process(heights, secs, start_time, u, v, w):
 
     #for ind_start in range(len(secs)-1):
     for idx, sec in enumerate(secs):
-        print(idx, sec)
         start = sec
         end = start + 1800 
         thirty_min_ind = [i for i in range(len(start_time))\
@@ -87,9 +86,10 @@ def plot(date, final_path, u_mean, v_mean, times, heights, hr_start=[0]):
     ax.set_xlabel('HH:MM UTC')
     ax.set_ylim(0,1500)
     ax.xaxis.set_major_formatter(ticklabels)
-    #####
+    # make times and heights 2d arrays
+    times = np.repeat([np.array(times)], u_mean.shape[-1], axis=0).swapaxes(1,0)
+    heights = np.repeat([heights], u_mean.shape[0], axis=0)
     ax.barbs(times,heights,u_mean,v_mean,barb_increments=dict(half=2.5,full=5,flag=10))
-    #####
     plt.savefig('%s/30min_winds_%s.png' % (final_path,date))
     plt.close()
 
@@ -155,3 +155,5 @@ def main():
 
 if __name__=="__main__":
     main()
+
+
