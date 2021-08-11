@@ -54,10 +54,7 @@ def process(ppi_files, min_cnr, final_path, prefix=None):
         # didn't successfully create any vads. can't continue processing.
         return
 
-    if len(ppi_files) > 1:
-        filename_time = vads[0].stime.strftime('%Y%m%d')
-    else:
-        filename_time = vads[0].stime.strftime('%Y%m%d_%H%M%S')
+    filename_time = vads[0].stime.strftime('%Y%m%d')
     final_file_name = 'VAD_'
     if prefix:
         final_file_name += prefix + '_'
