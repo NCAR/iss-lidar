@@ -37,7 +37,6 @@ def selectFiles(path):
     return sorted(list(ppi_files))
 
 def process(ppi_files, max_cnr, final_path, prefix=None):
-    vr_all = []
     mean_cnr = []
     vads = []
 
@@ -51,7 +50,6 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
             continue
         ppi.threshold_cnr(max_cnr)
         
-        vr_all.append(ppi.vr)
         mean_cnr.append(np.nanmean(ppi.cnr, axis=0))
         
         # generate VAD for this timestep
