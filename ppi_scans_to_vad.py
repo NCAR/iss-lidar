@@ -42,10 +42,6 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
     vr_all = []
     mean_cnr = []
     vads = []
-    #need these values from any good PPI scan
-    alt = None
-    lat = None
-    lon = None
 
     for f in ppi_files:
         ppi = PPI.fromFile(f)
@@ -65,13 +61,6 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
         # generate VAD for this timestep
         vad = VAD.calculate_ARM_VAD(ppi)
         vads.append(vad)
-        # good scan, so fill in metadata
-        if alt is None:
-            alt = ppi.alt
-        if lat is None:
-            lat = ppi.lat
-        if lon is None:
-            lon = ppi.lon
 
     if not vr_all: 
         # vr_all is empty if no files had ok elevation and azimuth. can't continue processing.
@@ -87,10 +76,8 @@ def process(ppi_files, max_cnr, final_path, prefix=None):
     final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
-    vadset = VADSet(vads, mean_cnr, max_cnr, alt, lat, lon, stime, etime)
+    vadset = VADSet(vads, mean_cnr, max_cnr, stime, etime)
     vadset.to_ARM_netcdf(final_file_path)
-#    vad = VAD.calculate_ARM_VAD(vr_all, ranges, elevation, azimuth)
-#    vad.create_ARM_nc(mean_cnr, max_cnr, alt, lat, lon, stime, etime, final_file_path)
 
 def main():
     args = createParser()

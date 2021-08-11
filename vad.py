@@ -50,7 +50,7 @@ class VAD:
     """
 
     def __init__(self, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation, time, el,
-                 nbeams):
+                 nbeams, alt, lat, lon):
         self.u = np.array(u)
         self.v = np.array(v)
         self.w = np.array(w)
@@ -65,6 +65,9 @@ class VAD:
         self.time = time
         self.el = el
         self.nbeams = nbeams
+        self.alt = alt
+        self.lat = lat
+        self.lon = lon
 
     @classmethod
     def calculate_ARM_VAD(cls, ppi, time=None, missing=None):
@@ -130,7 +133,7 @@ class VAD:
                            (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
                             np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
 
-        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, ppi.elevation, len(ppi.azimuth))
+        return cls(temp_u, temp_v, temp_w, speed, wdir, temp_du, temp_dv, temp_dw, z, residual, correlation, time, ppi.elevation, len(ppi.azimuth), ppi.alt, ppi.lat, ppi.lon)
 
 
     def plot_(self, filename, plot_time=None, title=None):
@@ -383,13 +386,14 @@ class VAD:
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
     
-    def __init__(self, vads,  mean_cnr, max_cnr, altitude, latitude, longitude, stime, etime):
+    def __init__(self, vads,  mean_cnr, max_cnr, stime, etime):
         self.vads = vads
         self.mean_cnr = mean_cnr
         self.max_cnr = max_cnr
-        self.alt = altitude
-        self.lat = latitude
-        self.lon = longitude
+        # use any vad for location, presumably it doesn't change
+        self.alt = vads[0].alt
+        self.lat = vads[0].lat
+        self.lon = vads[0].lon
         self.stime = stime # lists of datetime objects, tz-aware
         self.etime = etime
 
