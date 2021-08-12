@@ -5,7 +5,7 @@ import numpy as np
 
 from ppi import PPI
 from vad import xyz, non_nan_idxs, calc_A, calc_b
-from vad import VAD
+from vad import VAD, VADSet
 
 @pytest.fixture
 def ppi():
@@ -13,6 +13,18 @@ def ppi():
     ppi = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     ppi.threshold_cnr(-22) # use default threshold val in ppi_scans_to_vad of -22
     return ppi
+
+@pytest.fixture
+def ppis():
+    """ Read in 3 PPI scans """
+    a = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    a.threshold_cnr(-22)
+    b = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
+    b.threshold_cnr(-22)
+    c = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
+    c.threshold_cnr(-22)
+    return(a,b,c)
+
 
 @pytest.fixture
 def locations():
@@ -108,5 +120,55 @@ def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     assert np.array_equal(vad.residual, saved_res, equal_nan=True)
     assert np.array_equal(vad.correlation, saved_cor, equal_nan=True)
 
-def test_vadset():
-    pass
+def test_vadset_netcdf(ppis):
+    """ Compare data and data types between VADSet from VADs and VADSet from netcdf """
+    vads = []
+    for p in ppis:
+        vads.append(VAD.calculate_ARM_VAD(p))
+    vs = VADSet.from_VADs(vads, -22)
+    vs.to_ARM_netcdf("pickles/test_vadset.nc")
+    f= VADSet.from_file("pickles/test_vadset.nc")
+    # vadset from file should match original vadset
+    assert vs.min_cnr == f.min_cnr
+    assert type(vs.min_cnr) == type(f.min_cnr)
+    assert np.array_equal(vs.alt, f.alt, equal_nan=True)
+    assert type(vs.alt) == type(f.alt)
+    # differences of like 6e-7 in these vals
+    assert vs.lat == pytest.approx(f.lat)
+    assert type(vs.lat) == type(f.lat)
+    assert vs.lon == pytest.approx(f.lon)
+    assert type(vs.lon) == type(f.lon)
+    assert np.array_equal(vs.height, f.height)
+    assert type(vs.height) == type(f.height)
+    assert np.allclose(vs.mean_cnr, f.mean_cnr)
+    assert type(vs.mean_cnr) == type(f.mean_cnr)
+    assert vs.stime == f.stime
+    assert type(vs.stime) == type(f.stime)
+    assert vs.etime ==  f.etime
+    assert type(vs.etime) == type(f.etime)
+    assert vs.el == f.el
+    assert type(vs.el) == type(f.el)
+    assert vs.nbeams == f.nbeams
+    assert type(vs.nbeams) == type(f.nbeams)
+    assert np.allclose(vs.u, f.u, equal_nan=True)
+    assert type(vs.u) == type(f.u)
+    assert np.allclose(vs.du, f.du, equal_nan=True)
+    assert type(vs.du) == type(f.du)
+    assert np.allclose(vs.w, f.w, equal_nan=True)
+    assert type(vs.w) == type(f.w)
+    assert np.allclose(vs.dw, f.dw, equal_nan=True)
+    assert type(vs.dw) == type(f.dw)
+    assert np.allclose(vs.v, f.v, equal_nan=True)
+    assert type(vs.v) == type(f.v)
+    assert np.allclose(vs.dv, f.dv, equal_nan=True)
+    assert type(vs.dv) == type(f.dv)
+    assert np.allclose(vs.speed, f.speed, equal_nan=True)
+    assert type(vs.speed) == type(f.speed)
+    assert np.allclose(vs.wdir, f.wdir, equal_nan=True)
+    assert type(vs.wdir) == type(f.wdir)
+    assert np.allclose(vs.residual, f.residual, equal_nan=True)
+    assert type(vs.residual) == type(f.residual)
+    assert np.allclose(vs.correlation, f.correlation, equal_nan=True)
+    assert type(vs.correlation) == type(f.correlation)
+
+    
