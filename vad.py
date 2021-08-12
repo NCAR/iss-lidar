@@ -2,6 +2,7 @@
 
 import os
 import datetime as dt
+import pytz
 import numpy as np
 import netCDF4
 import matplotlib.pyplot as plt
@@ -387,32 +388,89 @@ class VAD:
 
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
-    
-    def __init__(self, vads, min_cnr):
-        self.mean_cnr = [i.mean_cnr for i in vads]
+
+    def __init__(self, mean_cnr, min_cnr, alt, lat, lon, height,
+                 stime,etime, el, nbeams, u, du, v, dv, w, dw, speed, wdir,
+                 residual, correlation):
+        self.mean_cnr = mean_cnr
         self.min_cnr = min_cnr
-        # use any vad for location, presumably it doesn't change
-        self.alt = vads[0].alt
-        self.lat = vads[0].lat
-        self.lon = vads[0].lon
-        # currently we assume that heights are the same for all VAD in a set
-        self.height = vads[0].z
-        # lists of datetime objects, tz-aware
-        self.stime = [i.stime for i in vads] 
-        self.etime = [i.etime for i in vads]
-        # data from VAD object
-        self.el = [i.el for i in vads]
-        self.nbeams = [i.nbeams for i in vads]
-        self.u = np.array([i.u for i in vads])
-        self.du = np.array([i.du for i in vads])
-        self.v = np.array([i.v for i in vads])
-        self.dv = np.array([i.dv for i in vads])
-        self.w = np.array([i.w for i in vads])
-        self.dw = np.array([i.dw for i in vads])
-        self.speed = np.array([i.speed for i in vads])
-        self.wdir = np.array([i.wdir for i in vads])
-        self.residual = np.array([i.residual for i in vads])
-        self.correlation = np.array([i.correlation for i in vads])
+        self.alt = alt
+        self.lat = lat
+        self.lon = lon
+        self.height = height
+        self.stime = stime
+        self.etime = etime
+        self.el = el
+        self.nbeams = nbeams
+        self.u = u
+        self.v = v
+        self.w = w
+        self.du = du
+        self.dv = dv
+        self.dw = dw
+        self.speed = speed
+        self.wdir = wdir
+        self.residual = residual
+        self.correlation = correlation
+    
+    @classmethod
+    def from_VADs(cls, vads, min_cnr):
+        return cls(np.array([i.mean_cnr for i in vads]),
+                   min_cnr,
+                   # use any vad for location, presumably it doesn't change
+                   vads[0].alt,
+                   vads[0].lat,
+                   vads[0].lon,
+                   # currently we assume that heights are the same for all VAD in a set
+                   vads[0].z,
+                   # lists of datetime objects, tz-aware
+                   [i.stime for i in vads],
+                   [i.etime for i in vads],
+                   # data from VAD objects
+                   [i.el for i in vads],
+                   [i.nbeams for i in vads],
+                   np.array([i.u for i in vads]),
+                   np.array([i.du for i in vads]),
+                   np.array([i.v for i in vads]),
+                   np.array([i.dv for i in vads]),
+                   np.array([i.w for i in vads]),
+                   np.array([i.dw for i in vads]),
+                   np.array([i.speed for i in vads]),
+                   np.array([i.wdir for i in vads]),
+                   np.array([i.residual for i in vads]),
+                   np.array([i.correlation for i in vads]))
+
+    @classmethod
+    def from_file(cls, filename):
+        """ Create a VADSet object from a daily VAD netcdf file """
+        f = netCDF4.Dataset(filename, 'r')
+        stime = list(netCDF4.num2date(f.variables['time'][:], f.variables['time'].units, only_use_python_datetimes=True, only_use_cftime_datetimes=False))
+        # reconstitute endtime from scan duration
+        etime = list(netCDF4.num2date(f.variables['time'][:] + f.variables['scan_duration'], f.variables['time'].units, only_use_python_datetimes=True, only_use_cftime_datetimes=False))
+        # make dates tz aware
+        stime = [s.replace(tzinfo=pytz.utc) for s in stime]
+        etime = [e.replace(tzinfo=pytz.utc) for e in etime]
+        # all vars are MaskedArray, cast back to what they originally were
+        return cls(np.array(f.variables['mean_snr'][:]),
+                   int(f.variables['snr_threshold'][:]),
+                   f.variables['alt'][:],
+                   f.variables['lat'][:],
+                   f.variables['lon'][:],
+                   f.variables['height'][:],
+                   stime,
+                   etime,
+                   list(f.variables['elevation_angle'][:]),
+                   list(f.variables['nbeams'][:]),
+                   np.array(f.variables['u'][:]),
+                   np.array(f.variables['u_error'][:]),
+                   np.array(f.variables['v'][:]),
+                   np.array(f.variables['v_error'][:]),
+                   np.array(f.variables['w'][:]),
+                   np.array(f.variables['w_error'][:]),
+                   np.array(f.variables['wind_speed'][:]),
+                   np.array(f.variables['wind_direction'][:]),
+                   np.array(f.variables['residual'][:]),
+                   np.array(f.variables['correlation'][:]))
 
 
     def to_ARM_netcdf(self, filepath):

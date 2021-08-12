@@ -61,7 +61,7 @@ def process(ppi_files, min_cnr, final_path, prefix=None):
     final_file_name += filename_time + '.nc'
     final_file_path = os.path.join(final_path, final_file_name)
     
-    vadset = VADSet(vads, min_cnr)
+    vadset = VADSet.from_VADs(vads, min_cnr)
     vadset.to_ARM_netcdf(final_file_path)
 
 def main():
