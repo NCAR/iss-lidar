@@ -10,11 +10,11 @@
 # EXAMPLE RUN FROM COMMAND LINE
 # ./vad_to_30min_winds.py 'path_to_VAD_nc_file' 'path_30min_nc_file_dest' 'date'
 
-import Lidar_functions
 import os
 import sys
 import argparse
 import netCDF4
+import pytz
 import datetime as dt
 import numpy as np
 import warnings
@@ -24,6 +24,9 @@ import matplotlib.pyplot as plt
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
 
+import Lidar_functions
+from vad import VADSet
+
 def parseArgs():
     parser = argparse.ArgumentParser(description="Generate consensus averaged netcdfs from VAD files")
     parser.add_argument("vadfile", help="daily VAD file")
@@ -32,33 +35,35 @@ def parseArgs():
     parser.add_argument("--plot", help="create PNG plot w/ same filename as netcdf", dest="plot", default=False, action='store_true')
     return parser.parse_args()
 
+def create_time_ranges(stimes):
+    """ Based on time range in the file, create a list of start times of 30min increments """
+    start = stimes[0]
+    if (start.minute > 30):
+        start = start.replace(minute=30)
+    else:
+        start = start.replace(minute=0)
+    # also zero out sec/microsec
+    start = start.replace(second=0, microsecond=0)
+    end = stimes[-1]
+    ranges = []
+    while ( start < end):
+        ranges.append(start)
+        start = start + dt.timedelta(minutes=30)
+    return ranges
 
-def read_VAD(vadfile):
-    # get the needed variables from daily VAD file
-    vad_file = netCDF4.Dataset(vadfile,'r')
-    lat = vad_file.variables['lat'][:]
-    lon = vad_file.variables['lon'][:]
-    alt = vad_file.variables['alt'][:]
-    heights = vad_file.variables['height'][:]
-    start_time = vad_file.variables['time'][:]
-    u = vad_file.variables['u'][:]
-    v = vad_file.variables['v'][:]
-    w = vad_file.variables['w'][:]
-    return(lat, lon, alt, heights, start_time, u, v, w)
-
-def process(heights, secs, start_time, u, v, w):
+def process(heights, ranges, stimes, u, v, w):
     # loop through the 30 minute time steps to get all the winds
-    u_mean = np.zeros((48,len(heights)))
-    v_mean = np.zeros((48,len(heights)))
-    w_mean = np.zeros((48,len(heights)))
+    u_mean = np.zeros((len(ranges),len(heights)))
+    v_mean = np.zeros((len(ranges),len(heights)))
+    w_mean = np.zeros((len(ranges),len(heights)))
 
     #for ind_start in range(len(secs)-1):
-    for idx, sec in enumerate(secs):
-        start = sec
-        end = start + 1800 
-        thirty_min_ind = [i for i in range(len(start_time))\
-                          if start_time[i] >= start and\
-                          start_time[i] < end]
+    for idx, r in enumerate(ranges):
+        start = r
+        end = start + dt.timedelta(minutes=30) 
+        thirty_min_ind = [i for i in range(len(stimes))\
+                          if stimes[i] >= start and\
+                          stimes[i] < end]
 
         if len(thirty_min_ind) == 0:
             u_mean[idx,:] = np.nan
@@ -93,21 +98,22 @@ def plot(date, final_path, u_mean, v_mean, times, heights, hr_start=[0]):
     plt.savefig('%s/30min_winds_%s.png' % (final_path,date))
     plt.close()
 
-def write_netcdf(final_path, date, secs, datetime_var, heights, u_mean, v_mean, w_mean, lat, lon, alt):
+def write_netcdf(final_path, date, ranges, heights, u_mean, v_mean, w_mean, lat, lon, alt):
     # create netCDF file
     filepath = os.path.join(final_path, "30min_winds_%s.nc" % date)
     # create dir if doesn't exist yet
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
     nc_file = netCDF4.Dataset(filepath, 'w',format='NETCDF4')
-    nc_file.createDimension('time',48)
+    nc_file.createDimension('time', len(ranges))
     nc_file.createDimension('height',len(heights))
     base_time = nc_file.createVariable('base_time','i')
-    base_time[:] = datetime_var.timestamp()
-    base_time.units = 'seconds since 1970-01-01 00:00:00'
+    base_time.units = 'seconds since 1970-01-01 00:00:00 UTC'
+    base_time[:] = netCDF4.date2num(ranges[0], base_time.units)
     time = nc_file.createVariable('time','d','time')
-    time[:] = secs
-    time.units = 'seconds since basetime'
+    basetime_string = ranges[0].strftime('%Y-%m-%d %H:%M:%S %Z')
+    time.units = 'seconds since ' + basetime_string
+    time[:] = netCDF4.date2num(ranges, time.units)
     height = nc_file.createVariable('height','f','height')
     height[:] = heights
     height.long_name = 'Height above instrument level'
@@ -134,26 +140,53 @@ def write_netcdf(final_path, date, secs, datetime_var, heights, u_mean, v_mean, 
 
 def main():
     args = parseArgs()
-    lat, lon, alt, heights, start_time, u, v, w = read_VAD(args.vadfile)
+    vadset = VADSet.from_file(args.vadfile)
 
-    # break day into 30-min chunks
-    # (eventually would be nice to base times on what times are in the file)
-    hr_start = ['00']
-    secs = np.arange(0, 86400, 1800)
-    datetime_var = dt.datetime.strptime(args.date,'%Y%m%d')
-    full_datetime = []
-    datetimes = []
-    
-    u_mean, v_mean, w_mean = process(heights, secs, start_time, u, v, w)
+    ranges = create_time_ranges(vadset.stime)
 
-    for s in secs:
-        full_datetime.append(datetime_var + dt.timedelta(seconds=int(s)))
+    u_mean, v_mean, w_mean = process(vadset.height, ranges, vadset.stime, vadset.u, vadset.v, vadset.w)
 
     if (args.plot):
-        plot(args.date, args.destdir, u_mean, v_mean, full_datetime, heights)
-    write_netcdf(args.destdir, args.date, secs, datetime_var, heights, u_mean, v_mean, w_mean, lat, lon, alt)
+        plot(args.date, args.destdir, u_mean, v_mean, ranges, vadset.height)
+    write_netcdf(args.destdir, args.date, ranges, vadset.height, u_mean, v_mean, w_mean, vadset.lat, vadset.lon, vadset.alt)
 
 if __name__=="__main__":
     main()
 
 
+def test_create_time_ranges():
+    stime = [dt.datetime(2021, 6, 30, 15, 20, 22, 627000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 17, 16, 44, 55000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 17, 42, 38, 450000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 18, 8, 32, 702000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 18, 34, 27, 82000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 19, 0, 21, 358000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 20, 54, 16, 652000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 21, 20, 10, 939000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 21, 46, 5, 270000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 22, 11, 59, 665000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 22, 37, 53, 985000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 23, 3, 48, 337000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 23, 29, 42, 655000, pytz.UTC),
+             dt.datetime(2021, 6, 30, 23, 55, 36, 976000, pytz.UTC)]
+    ranges = [dt.datetime(2021, 6, 30, 15, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 15, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 16, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 16, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 17, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 17, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 18, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 18, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 19, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 19, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 20, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 20, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 21, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 21, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 22, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 22, 30, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 23, 00, 00, 00, pytz.UTC),
+              dt.datetime(2021, 6, 30, 23, 30, 00, 00, pytz.UTC)]
+    res = create_time_ranges(stime)
+    assert res == ranges
+             
