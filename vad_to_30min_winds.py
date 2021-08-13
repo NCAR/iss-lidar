@@ -31,7 +31,6 @@ def parseArgs():
     parser = argparse.ArgumentParser(description="Generate consensus averaged netcdfs from VAD files")
     parser.add_argument("vadfile", help="daily VAD file")
     parser.add_argument("destdir", help="directory to save averaged file to")
-    parser.add_argument("date", help="date of file to create")
     parser.add_argument("--plot", help="create PNG plot w/ same filename as netcdf", dest="plot", default=False, action='store_true')
     return parser.parse_args()
 
@@ -83,10 +82,10 @@ def process(heights, ranges, stimes, u, v, w):
     return (u_mean, v_mean, w_mean)
 
 
-def plot(date, final_path, u_mean, v_mean, times, heights, hr_start=[0]):
+def plot(date, final_path, u_mean, v_mean, times, heights):
     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
     fig,ax = plt.subplots(1,1,figsize=(10,8))
-    fig.suptitle('SWEX 30 minute winds starting at %s %s:00:00 for 24 hours' % (date,hr_start[0]))
+    fig.suptitle('SWEX 30 minute winds starting at %s 00:00:00 for 24 hours' % (times[0].strftime("%Y%m%d")))
     ax.set_ylabel('Height (m)')
     ax.set_xlabel('HH:MM UTC')
     ax.set_ylim(0,1500)
@@ -98,9 +97,9 @@ def plot(date, final_path, u_mean, v_mean, times, heights, hr_start=[0]):
     plt.savefig('%s/30min_winds_%s.png' % (final_path,date))
     plt.close()
 
-def write_netcdf(final_path, date, ranges, heights, u_mean, v_mean, w_mean, lat, lon, alt):
+def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, alt):
     # create netCDF file
-    filepath = os.path.join(final_path, "30min_winds_%s.nc" % date)
+    filepath = os.path.join(final_path, "30min_winds_%s.nc" % ranges[0].strftime("%Y%m%d"))
     # create dir if doesn't exist yet
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
@@ -148,7 +147,7 @@ def main():
 
     if (args.plot):
         plot(args.date, args.destdir, u_mean, v_mean, ranges, vadset.height)
-    write_netcdf(args.destdir, args.date, ranges, vadset.height, u_mean, v_mean, w_mean, vadset.lat, vadset.lon, vadset.alt)
+    write_netcdf(args.destdir, ranges, vadset.height, u_mean, v_mean, w_mean, vadset.lat, vadset.lon, vadset.alt)
 
 if __name__=="__main__":
     main()
