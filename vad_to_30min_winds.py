@@ -34,16 +34,10 @@ def parseArgs():
     parser.add_argument("--plot", help="create PNG plot w/ same filename as netcdf", dest="plot", default=False, action='store_true')
     return parser.parse_args()
 
-def create_time_ranges(stimes):
-    """ Based on time range in the file, create a list of start times of 30min increments """
-    start = stimes[0]
-    if (start.minute > 30):
-        start = start.replace(minute=30)
-    else:
-        start = start.replace(minute=0)
-    # also zero out sec/microsec
-    start = start.replace(second=0, microsecond=0)
-    end = stimes[-1]
+def create_time_ranges(day):
+    """ Create a list of datetimes every 30 minutes for given day """
+    start = dt.datetime(day.year, day.month, day.day, tzinfo=pytz.UTC)
+    end = start + dt.timedelta(days=1)
     ranges = []
     while ( start < end):
         ranges.append(start)
@@ -82,19 +76,19 @@ def process(heights, ranges, stimes, u, v, w):
     return (u_mean, v_mean, w_mean)
 
 
-def plot(date, final_path, u_mean, v_mean, times, heights):
+def plot(final_path, u_mean, v_mean, ranges, heights):
     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
     fig,ax = plt.subplots(1,1,figsize=(10,8))
-    fig.suptitle('SWEX 30 minute winds starting at %s 00:00:00 for 24 hours' % (times[0].strftime("%Y%m%d")))
+    fig.suptitle('SWEX 30 minute winds starting at %s 00:00:00 for 24 hours' % (ranges[0].strftime("%Y%m%d")))
     ax.set_ylabel('Height (m)')
     ax.set_xlabel('HH:MM UTC')
     ax.set_ylim(0,1500)
     ax.xaxis.set_major_formatter(ticklabels)
     # make times and heights 2d arrays
-    times = np.repeat([np.array(times)], u_mean.shape[-1], axis=0).swapaxes(1,0)
+    times = np.repeat([np.array(ranges)], u_mean.shape[-1], axis=0).swapaxes(1,0)
     heights = np.repeat([heights], u_mean.shape[0], axis=0)
     ax.barbs(times,heights,u_mean,v_mean,barb_increments=dict(half=2.5,full=5,flag=10))
-    plt.savefig('%s/30min_winds_%s.png' % (final_path,date))
+    plt.savefig('%s/30min_winds_%s.png' % (final_path,ranges[0].strftime("%Y%m%d")))
     plt.close()
 
 def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, alt):
@@ -141,12 +135,12 @@ def main():
     args = parseArgs()
     vadset = VADSet.from_file(args.vadfile)
 
-    ranges = create_time_ranges(vadset.stime)
+    ranges = create_time_ranges(vadset.stime[0].date())
 
     u_mean, v_mean, w_mean = process(vadset.height, ranges, vadset.stime, vadset.u, vadset.v, vadset.w)
 
     if (args.plot):
-        plot(args.date, args.destdir, u_mean, v_mean, ranges, vadset.height)
+        plot(args.destdir, u_mean, v_mean, ranges, vadset.height)
     write_netcdf(args.destdir, ranges, vadset.height, u_mean, v_mean, w_mean, vadset.lat, vadset.lon, vadset.alt)
 
 if __name__=="__main__":
@@ -154,38 +148,9 @@ if __name__=="__main__":
 
 
 def test_create_time_ranges():
-    stime = [dt.datetime(2021, 6, 30, 15, 20, 22, 627000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 17, 16, 44, 55000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 17, 42, 38, 450000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 18, 8, 32, 702000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 18, 34, 27, 82000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 19, 0, 21, 358000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 20, 54, 16, 652000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 21, 20, 10, 939000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 21, 46, 5, 270000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 22, 11, 59, 665000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 22, 37, 53, 985000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 23, 3, 48, 337000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 23, 29, 42, 655000, pytz.UTC),
-             dt.datetime(2021, 6, 30, 23, 55, 36, 976000, pytz.UTC)]
-    ranges = [dt.datetime(2021, 6, 30, 15, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 15, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 16, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 16, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 17, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 17, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 18, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 18, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 19, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 19, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 20, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 20, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 21, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 21, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 22, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 22, 30, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 23, 00, 00, 00, pytz.UTC),
-              dt.datetime(2021, 6, 30, 23, 30, 00, 00, pytz.UTC)]
-    res = create_time_ranges(stime)
-    assert res == ranges
+    day = dt.date(2021, 6, 30)
+    res = create_time_ranges(day)
+    assert len(res) == 48
+    assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, pytz.UTC)
+    assert res[-1] == dt.datetime(2021, 6, 30, 23, 30, 00, 00, pytz.UTC)
              
