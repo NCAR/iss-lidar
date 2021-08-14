@@ -59,7 +59,7 @@ def plot(final_path, u_mean, v_mean, ranges, heights):
     plt.savefig('%s/30min_winds_%s.png' % (final_path,ranges[0].strftime("%Y%m%d")))
     plt.close()
 
-def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, alt):
+def write_netcdf(final_path, ranges, vadset, u_mean, v_mean, w_mean):
     # create netCDF file
     filepath = os.path.join(final_path, "30min_winds_%s.nc" % ranges[0].strftime("%Y%m%d"))
     # create dir if doesn't exist yet
@@ -67,7 +67,7 @@ def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, 
         os.makedirs(os.path.dirname(filepath))
     nc_file = netCDF4.Dataset(filepath, 'w',format='NETCDF4')
     nc_file.createDimension('time', len(ranges))
-    nc_file.createDimension('height',len(heights))
+    nc_file.createDimension('height',len(vadset.height))
     base_time = nc_file.createVariable('base_time','i')
     base_time.units = 'seconds since 1970-01-01 00:00:00 UTC'
     base_time[:] = netCDF4.date2num(ranges[0], base_time.units)
@@ -76,7 +76,7 @@ def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, 
     time.units = 'seconds since ' + basetime_string
     time[:] = netCDF4.date2num(ranges, time.units)
     height = nc_file.createVariable('height','f','height')
-    height[:] = heights
+    height[:] = vadset.height
     height.long_name = 'Height above instrument level'
     height.units = 'm'
     u_var = nc_file.createVariable('u','f',('time','height'))
@@ -92,11 +92,11 @@ def write_netcdf(final_path, ranges, heights, u_mean, v_mean, w_mean, lat, lon, 
     w_var.long_name = 'Vertical component of wind vector'
     w_var.units = 'm/s' 
     lat_var = nc_file.createVariable('lat','f')
-    lat_var[:] = lat
+    lat_var[:] = vadset.lat
     lon_var = nc_file.createVariable('lon','f')
-    lon_var[:] = lon
+    lon_var[:] = vadset.lon
     alt_var = nc_file.createVariable('alt','f')
-    alt_var[:] = alt
+    alt_var[:] = vadset.alt
     nc_file.close()
 
 def main():
@@ -109,7 +109,7 @@ def main():
 
     if (args.plot):
         plot(args.destdir, u_mean, v_mean, ranges, vadset.height)
-    write_netcdf(args.destdir, ranges, vadset.height, u_mean, v_mean, w_mean, vadset.lat, vadset.lon, vadset.alt)
+    write_netcdf(args.destdir, ranges, vadset, u_mean, v_mean, w_mean)
 
 if __name__=="__main__":
     main()
