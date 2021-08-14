@@ -59,9 +59,13 @@ def plot(final_path, u_mean, v_mean, ranges, heights):
     plt.savefig('%s/30min_winds_%s.png' % (final_path,ranges[0].strftime("%Y%m%d")))
     plt.close()
 
-def write_netcdf(final_path, ranges, vadset, u_mean, v_mean, w_mean):
+def write_netcdf(final_path, ranges, vadset, u_mean, v_mean, w_mean, prefix=None):
     # create netCDF file
-    filepath = os.path.join(final_path, "30min_winds_%s.nc" % ranges[0].strftime("%Y%m%d"))
+    filepath = "30min_winds_"
+    if prefix:
+        filepath += prefix + "_"
+    filepath += ranges[0].strftime("%Y%m%d") + ".nc"
+    filepath = os.path.join(final_path, filepath)
     # create dir if doesn't exist yet
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
