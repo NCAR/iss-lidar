@@ -14,8 +14,6 @@ import netCDF4
 from datetime import datetime
 import pytz
 
-from vad import VAD
-
 class gridded_RHI:
     """
     This is a class created for gridded RHI data
@@ -128,6 +126,8 @@ def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
     """
     This function will work with LidarSim data
     """
+    # import this here b/c it's only needed in this function
+    from vad import VAD
     if scantype == 'vad':
         el = np.nanmean(elevation)
         vad = ARM_VAD(scan, ranges, el, azimuth, time)
