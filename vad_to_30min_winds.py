@@ -44,38 +44,6 @@ def create_time_ranges(day):
         start = start + dt.timedelta(minutes=30)
     return ranges
 
-def process(vs, ranges):
-    # loop through the 30 minute time steps to get all the winds
-    u_mean = np.zeros((len(ranges),len(vs.height)))
-    v_mean = np.zeros((len(ranges),len(vs.height)))
-    w_mean = np.zeros((len(ranges),len(vs.height)))
-
-    #for ind_start in range(len(secs)-1):
-    for idx, r in enumerate(ranges):
-        start = r
-        end = start + dt.timedelta(minutes=30) 
-        thirty_min_ind = [i for i in range(len(vs.stime))\
-                          if vs.stime[i] >= start and\
-                          vs.stime[i] < end]
-
-        if len(thirty_min_ind) == 0:
-            u_mean[idx,:] = np.nan
-            v_mean[idx,:] = np.nan
-            w_mean[idx,:] = np.nan
-            continue
-
-        u_all = np.array([vs.u[i] for i in thirty_min_ind]) 
-        v_all = np.array([vs.v[i] for i in thirty_min_ind]) 
-        w_all = np.array([vs.w[i] for i in thirty_min_ind]) 
-
-        for hgt in range(len(vs.height)):
-        # run consensus averaging with a window of 5 m/s
-            u_mean[idx,hgt] = Lidar_functions.consensus_avg(u_all[:,hgt],5)  
-            v_mean[idx,hgt] = Lidar_functions.consensus_avg(v_all[:,hgt],5)  
-            w_mean[idx,hgt] = Lidar_functions.consensus_avg(w_all[:,hgt],5)  
-    return (u_mean, v_mean, w_mean)
-
-
 def plot(final_path, u_mean, v_mean, ranges, heights):
     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
     fig,ax = plt.subplots(1,1,figsize=(10,8))
@@ -137,7 +105,7 @@ def main():
 
     ranges = create_time_ranges(vadset.stime[0].date())
 
-    u_mean, v_mean, w_mean = process(vadset, ranges)
+    u_mean, v_mean, w_mean = vadset.consensus_average(ranges)
 
     if (args.plot):
         plot(args.destdir, u_mean, v_mean, ranges, vadset.height)

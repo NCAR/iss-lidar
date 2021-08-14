@@ -7,6 +7,8 @@ import numpy as np
 import netCDF4
 import matplotlib.pyplot as plt
 
+import Lidar_functions
+
 def xyz(ranges, el, az):
     """ Calculate x, y, and z coordinates from range, elevation, and azimuth """
     # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
@@ -472,6 +474,36 @@ class VADSet:
                    np.array(f.variables['residual'][:]),
                    np.array(f.variables['correlation'][:]))
 
+    def consensus_average(self, ranges):
+        """ Return consensus averaged u,v,w for 30-min increments starting at list of time ranges """
+        u_mean = np.zeros((len(ranges),len(self.height)))
+        v_mean = np.zeros((len(ranges),len(self.height)))
+        w_mean = np.zeros((len(ranges),len(self.height)))
+
+        #for ind_start in range(len(secs)-1):
+        for idx, r in enumerate(ranges):
+            start = r
+            end = start + dt.timedelta(minutes=30) 
+            thirty_min_ind = [i for i in range(len(self.stime))\
+                              if self.stime[i] >= start and\
+                              self.stime[i] < end]
+
+            if len(thirty_min_ind) == 0:
+                u_mean[idx,:] = np.nan
+                v_mean[idx,:] = np.nan
+                w_mean[idx,:] = np.nan
+                continue
+
+            u_all = np.array([self.u[i] for i in thirty_min_ind]) 
+            v_all = np.array([self.v[i] for i in thirty_min_ind]) 
+            w_all = np.array([self.w[i] for i in thirty_min_ind]) 
+
+            for hgt in range(len(self.height)):
+            # run consensus averaging with a window of 5 m/s
+                u_mean[idx,hgt] = Lidar_functions.consensus_avg(u_all[:,hgt],5)  
+                v_mean[idx,hgt] = Lidar_functions.consensus_avg(v_all[:,hgt],5)  
+                w_mean[idx,hgt] = Lidar_functions.consensus_avg(w_all[:,hgt],5)  
+        return (u_mean, v_mean, w_mean)
 
     def to_ARM_netcdf(self, filepath):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
