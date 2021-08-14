@@ -33,7 +33,7 @@ def selectFiles(path):
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
-def process(ppi_files, min_cnr, final_path, prefix=None):
+def process(ppi_files, min_cnr):
     vads = []
 
     for f in ppi_files:
@@ -54,20 +54,24 @@ def process(ppi_files, min_cnr, final_path, prefix=None):
         # didn't successfully create any vads. can't continue processing.
         return
 
-    filename_time = vads[0].stime.strftime('%Y%m%d')
+    
+    vadset = VADSet.from_VADs(vads, min_cnr)
+    return vadset
+
+def save(vadset, destdir, prefix=None):
+    filename_time = vadset.stime[0].strftime('%Y%m%d')
     final_file_name = 'VAD_'
     if prefix:
         final_file_name += prefix + '_'
     final_file_name += filename_time + '.nc'
-    final_file_path = os.path.join(final_path, final_file_name)
-    
-    vadset = VADSet.from_VADs(vads, min_cnr)
+    final_file_path = os.path.join(destdir, final_file_name)
     vadset.to_ARM_netcdf(final_file_path)
 
 def main():
     args = createParser()
     ppi_scans = selectFiles(args.ppifiles)
-    process(ppi_scans, args.min_cnr, args.destdir)
+    vadset = process(ppi_scans, args.min_cnr)
+    save(vadset, args.destdir)
 
 if __name__=="__main__":
     main()
