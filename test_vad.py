@@ -6,6 +6,7 @@ import numpy.testing
 from pathlib import Path
 
 from ppi import PPI
+import vad
 from vad import xyz, non_nan_idxs, calc_A, calc_b
 from vad import VAD, VADSet
 
@@ -183,4 +184,11 @@ def test_vadset_netcdf(ppis):
     assert_allclose(vs.correlation, f.correlation, equal_nan=True)
     assert type(vs.correlation) == type(f.correlation)
 
-    
+def test_wind_from_uv():
+    u = np.array([-1, np.NZERO, 0, 1, 0, -2, np.nan], dtype=float)
+    v = np.array([np.NINF, np.NZERO, 0, 0, -1, -2, 2], dtype=float)
+    xspd = np.array([np.inf, 0, 0, 1, 1, np.sqrt(8), np.nan], dtype=float)
+    xdir = np.array([0, 90, 270, 270, 0, 45, np.nan], dtype=float)
+    wspd, wdir = vad.wspd_wdir_from_uv(u, v)
+    assert_allclose(wspd, xspd, equal_nan=True)
+    assert_allclose(wdir, xdir, equal_nan=True)

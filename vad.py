@@ -47,6 +47,14 @@ def calc_b(el, az, vr, idxs, i):
     b = np.array([b1, b2, b3])
     return b
 
+def wspd_wdir_from_uv(u, v):
+    # calculate derived products
+    speed = np.sqrt(u**2 + v**2)
+    wdir = 270 - np.rad2deg(np.arctan2(v, u))
+    notnan = ~np.isnan(wdir)
+    wdir[notnan] %= 360
+    return speed, wdir
+
 class VAD:
     """
     This is a class created for VAD data
@@ -122,10 +130,7 @@ class VAD:
             w[i] = temp[2]
 
         # calculate derived products
-        speed = np.sqrt(u**2 + v**2)
-        wdir = 270 - np.rad2deg(np.arctan2(v, u))
-        # mod by 360 to get deg < 360
-        wdir = wdir % 360
+        speed, wdir = wspd_wdir_from_uv(u, v)
 
         residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)\
                         [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2, axis=0))
