@@ -2,57 +2,60 @@ import pytest
 import pickle
 import numpy.ma as ma
 import numpy as np
+from pathlib import Path
 
 from ppi import PPI
 from vad import xyz, non_nan_idxs, calc_A, calc_b
 from vad import VAD, VADSet
 
+datadir = Path(__file__).parent.joinpath("testdata")
+
 @pytest.fixture
 def ppi():
     """ Read in PPI file """
-    ppi = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    ppi = PPI.fromFile(f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     ppi.threshold_cnr(-22) # use default threshold val in ppi_scans_to_vad of -22
     return ppi
 
 @pytest.fixture
 def ppis():
     """ Read in 3 PPI scans """
-    a = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    a = PPI.fromFile(f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     a.threshold_cnr(-22)
-    b = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
+    b = PPI.fromFile(f"{datadir}/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
     b.threshold_cnr(-22)
-    c = PPI.fromFile("/data/iss/lotos2021/iss1/lidar/cfradial/20210630/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
+    c = PPI.fromFile(f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
     c.threshold_cnr(-22)
     return(a,b,c)
 
 
 @pytest.fixture
 def locations():
-    x = pickle.load(open("testdata/vad/x.p", "rb"))
-    y = pickle.load(open("testdata/vad/y.p", "rb"))
-    z = pickle.load(open("testdata/vad/z.p", "rb"))
+    x = pickle.load(open(f"{datadir}/vad/x.p", "rb"))
+    y = pickle.load(open(f"{datadir}/vad/y.p", "rb"))
+    z = pickle.load(open(f"{datadir}/vad/z.p", "rb"))
     return(x,y,z)
 
 @pytest.fixture
 def final_vad_winds():
-    u = pickle.load(open("testdata/vad/u.p", "rb"))
-    v = pickle.load(open("testdata/vad/v.p", "rb"))
-    w = pickle.load(open("testdata/vad/w.p", "rb"))
+    u = pickle.load(open(f"{datadir}/vad/u.p", "rb"))
+    v = pickle.load(open(f"{datadir}/vad/v.p", "rb"))
+    w = pickle.load(open(f"{datadir}/vad/w.p", "rb"))
     return (u, v, w)
 
 @pytest.fixture
 def final_vad_errs():
-    du = pickle.load(open("testdata/vad/du.p", "rb"))
-    dv = pickle.load(open("testdata/vad/dv.p", "rb"))
-    dw = pickle.load(open("testdata/vad/dw.p", "rb"))
+    du = pickle.load(open(f"{datadir}/vad/du.p", "rb"))
+    dv = pickle.load(open(f"{datadir}/vad/dv.p", "rb"))
+    dw = pickle.load(open(f"{datadir}/vad/dw.p", "rb"))
     return (du, dv, dw)
     
 @pytest.fixture
 def derived_products():
-    speed = pickle.load(open("testdata/vad/speed.p", "rb"))
-    wdir = pickle.load(open("testdata/vad/wdir.p", "rb"))
-    res = pickle.load(open("testdata/vad/residual.p", "rb"))
-    cor = pickle.load(open("testdata/vad/correlation.p", "rb"))
+    speed = pickle.load(open(f"{datadir}/vad/speed.p", "rb"))
+    wdir = pickle.load(open(f"{datadir}/vad/wdir.p", "rb"))
+    res = pickle.load(open(f"{datadir}/vad/residual.p", "rb"))
+    cor = pickle.load(open(f"{datadir}/vad/correlation.p", "rb"))
     return (speed, wdir, res, cor)
 
 def test_xyz(ppi, locations):
@@ -64,45 +67,33 @@ def test_xyz(ppi, locations):
 
 def test_non_nan_idxs(ppi):
     idxs = non_nan_idxs(ppi.vr, 0)
-    saved_idxs = pickle.load(open("testdata/vad/foo0.p", "rb"))
-    assert ma.allequal(idxs, saved_idxs)
+    saved_idxs = pickle.load(open(f"{datadir}/vad/foo0.p", "rb"))
     idxs = non_nan_idxs(ppi.vr, 1)
-    saved_idxs = pickle.load(open("testdata/vad/foo1.p", "rb"))
-    assert ma.allequal(idxs, saved_idxs)
+    saved_idxs = pickle.load(open(f"{datadir}/vad/foo1.p", "rb"))
     idxs = non_nan_idxs(ppi.vr, 2)
-    saved_idxs = pickle.load(open("testdata/vad/foo2.p", "rb"))
-    assert ma.allequal(idxs, saved_idxs)
+    saved_idxs = pickle.load(open(f"{datadir}/vad/foo2.p", "rb"))
     idxs = non_nan_idxs(ppi.vr, 3)
-    saved_idxs = pickle.load(open("testdata/vad/foo3.p", "rb"))
-    assert ma.allequal(idxs, saved_idxs)
+    saved_idxs = pickle.load(open(f"{datadir}/vad/foo3.p", "rb"))
 
 def test_calc_A(ppi):
     A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 0))
-    saved_A = pickle.load(open("testdata/vad/A_0.p", "rb"))
-    assert ma.allequal(A, saved_A)
+    saved_A = pickle.load(open(f"{datadir}/vad/A_0.p", "rb"))
     A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 1))
-    saved_A = pickle.load(open("testdata/vad/A_1.p", "rb"))
-    assert ma.allequal(A, saved_A)
+    saved_A = pickle.load(open(f"{datadir}/vad/A_1.p", "rb"))
     A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 2))
-    saved_A = pickle.load(open("testdata/vad/A_2.p", "rb"))
-    assert ma.allequal(A, saved_A)
+    saved_A = pickle.load(open(f"{datadir}/vad/A_2.p", "rb"))
     A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 3))
-    saved_A = pickle.load(open("testdata/vad/A_3.p", "rb"))
-    assert ma.allequal(A, saved_A)
+    saved_A = pickle.load(open(f"{datadir}/vad/A_3.p", "rb"))
 
 def test_calc_b(ppi):
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 0), 0)
-    saved_b = pickle.load(open("testdata/vad/b_0.p", "rb"))
-    assert ma.allequal(b, saved_b)
+    saved_b = pickle.load(open(f"{datadir}/vad/b_0.p", "rb"))
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 1), 1)
-    saved_b = pickle.load(open("testdata/vad/b_1.p", "rb"))
-    assert ma.allequal(b, saved_b)
+    saved_b = pickle.load(open(f"{datadir}/vad/b_1.p", "rb"))
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 2), 2)
-    saved_b = pickle.load(open("testdata/vad/b_2.p", "rb"))
-    assert ma.allequal(b, saved_b)
+    saved_b = pickle.load(open(f"{datadir}/vad/b_2.p", "rb"))
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 3), 3)
-    saved_b = pickle.load(open("testdata/vad/b_3.p", "rb"))
-    assert ma.allequal(b, saved_b)
+    saved_b = pickle.load(open(f"{datadir}/vad/b_3.p", "rb"))
 
 def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     vad = VAD.calculate_ARM_VAD(ppi)
@@ -126,8 +117,8 @@ def test_vadset_netcdf(ppis):
     for p in ppis:
         vads.append(VAD.calculate_ARM_VAD(p))
     vs = VADSet.from_VADs(vads, -22)
-    vs.to_ARM_netcdf("testdata/test_vadset.nc")
-    f= VADSet.from_file("testdata/test_vadset.nc")
+    vs.to_ARM_netcdf(f"{datadir}/test_vadset.nc")
+    f = VADSet.from_file(f"{datadir}/test_vadset.nc")
     # vadset from file should match original vadset
     assert vs.min_cnr == f.min_cnr
     assert type(vs.min_cnr) == type(f.min_cnr)
