@@ -36,15 +36,22 @@ def calc_A(el, az, idxs):
     A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
     return A
 
+def nan_if_masked(barray):
+    return [b if not np.ma.is_masked(b) else np.nan for b in barray]
+
 def calc_b(el, az, vr, idxs, i):
     """ Calculate contents of b matrix """
-    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+    # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will be
+    # masked, and the np.array() creation will report a warning about converting
+    # a masked element to nan.  The best way I could figure out to avoid that warning
+    # was to explicitly convert a masked result.
+    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
          np.sin(np.deg2rad(az[idxs])))
-    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
          np.cos(np.deg2rad(az[idxs])))
     b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
 
-    b = np.array([b1, b2, b3])
+    b = np.array(nan_if_masked([b1, b2, b3]))
     return b
 
 def wspd_wdir_from_uv(u, v):
