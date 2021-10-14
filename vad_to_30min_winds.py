@@ -19,7 +19,7 @@ import datetime as dt
 import numpy as np
 import warnings
 import matplotlib
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
