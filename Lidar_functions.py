@@ -118,9 +118,9 @@ def ARM_VAD(radial_vel,ranges,el,az,time=None,missing=None):
             A = np.array([[A11,A12,A13],[A12,A22,A23],[A13,A23,A33]])
             invA = np.linalg.inv(A)
     
-            temp_du[i] = invA[0,0]
-            temp_dv[i] = invA[1,1]
-            temp_dw[i] = invA[2,2]
+            temp_du[i] = np.sqrt(invA[0,0])
+            temp_dv[i] = np.sqrt(invA[1,1])
+            temp_dw[i] = np.sqrt(invA[2,2])
     
             b1 = np.cos(np.deg2rad(el)) * np.sum(vr[j,foo,i] *\
                  np.sin(np.deg2rad(az[foo])))
