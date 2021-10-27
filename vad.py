@@ -36,16 +36,31 @@ def calc_A(el, az, idxs):
     A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
     return A
 
+def nan_if_masked(barray):
+    return [b if not np.ma.is_masked(b) else np.nan for b in barray]
+
 def calc_b(el, az, vr, idxs, i):
     """ Calculate contents of b matrix """
-    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+    # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will be
+    # masked, and the np.array() creation will report a warning about converting
+    # a masked element to nan.  The best way I could figure out to avoid that warning
+    # was to explicitly convert a masked result.
+    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
          np.sin(np.deg2rad(az[idxs])))
-    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *\
+    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
          np.cos(np.deg2rad(az[idxs])))
     b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
 
-    b = np.array([b1, b2, b3])
+    b = np.array(nan_if_masked([b1, b2, b3]))
     return b
+
+def wspd_wdir_from_uv(u, v):
+    # calculate derived products
+    speed = np.sqrt(u**2 + v**2)
+    wdir = 270 - np.rad2deg(np.arctan2(v, u))
+    notnan = ~np.isnan(wdir)
+    wdir[notnan] %= 360
+    return speed, wdir
 
 class VAD:
     """
@@ -122,10 +137,7 @@ class VAD:
             w[i] = temp[2]
 
         # calculate derived products
-        speed = np.sqrt(u**2 + v**2)
-        wdir = 270 - np.rad2deg(np.arctan2(v, u))
-        # mod by 360 to get deg < 360
-        wdir = wdir % 360
+        speed, wdir = wspd_wdir_from_uv(u, v)
 
         residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)\
                         [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2, axis=0))
