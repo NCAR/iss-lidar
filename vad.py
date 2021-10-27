@@ -125,9 +125,9 @@ class VAD:
             A = calc_A(ppi.elevation, ppi.azimuth, idxs)
             invA = np.linalg.inv(A)
 
-            du[i] = invA[0, 0]
-            dv[i] = invA[1, 1]
-            dw[i] = invA[2, 2]
+            du[i] = np.sqrt(invA[0, 0])
+            dv[i] = np.sqrt(invA[1, 1])
+            dw[i] = np.sqrt(invA[2, 2])
             
             b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
             temp = invA.dot(b)
