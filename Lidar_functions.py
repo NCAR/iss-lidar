@@ -14,6 +14,7 @@ import netCDF4
 from datetime import datetime
 import pytz
 
+
 class gridded_RHI:
     """
     This is a class created for gridded RHI data
@@ -29,6 +30,7 @@ class gridded_RHI:
         self.time = np.array(time)
         self.grid_el = grid_el
         self.grid_range = grid_range
+
 
 def grid_rhi(field, elevation, ranges, dims, dx, offset=None,
              time=None, missing=None):
@@ -76,10 +78,14 @@ def grid_rhi(field, elevation, ranges, dims, dx, offset=None,
     for i in range(times):
         foo = np.where(~np.isnan(x[i]))
 
-        grid_field.append(scipy.interpolate.griddata((x[i, foo[0], foo[1]], z[i, foo[0], foo[1]]),
-                                                     raw[i, foo[0], foo[1]], (grid_x, grid_z)))
+        grid_field.append(scipy.interpolate.griddata((x[i, foo[0], foo[1]],
+                                                      z[i, foo[0], foo[1]]),
+                                                     raw[i, foo[0], foo[1]],
+                                                     (grid_x, grid_z)))
 
-    return gridded_RHI(grid_field, grid_x, grid_z, dx, offset, grid_el, grid_range, time)
+    return gridded_RHI(grid_field, grid_x, grid_z, dx, offset, grid_el,
+                       grid_range, time)
+
 
 def coplanar_analysis(vr1, vr2, el1, el2, az):
     """
@@ -92,9 +98,11 @@ def coplanar_analysis(vr1, vr2, el1, el2, az):
         for j in range(vr1.shape[1]):
 
             if (~np.isnan(vr1[i, j])) and (~np.isnan(vr2[i, j])):
-                M = np.array([[np.sin(np.deg2rad(az))*np.cos(np.deg2rad(el1[i, j])),
+                M = np.array([[np.sin(np.deg2rad(az)) *
+                               np.cos(np.deg2rad(el1[i, j])),
                                np.sin(np.deg2rad(el1[i, j]))],
-                              [np.sin(np.deg2rad(az))*np.cos(np.deg2rad(el2[i, j])),
+                              [np.sin(np.deg2rad(az)) *
+                               np.cos(np.deg2rad(el2[i, j])),
                                np.sin(np.deg2rad(el2[i, j]))]])
 
                 U = np.linalg.solve(M, np.array([vr1[i, j], vr2[i, j]]))
@@ -102,6 +110,7 @@ def coplanar_analysis(vr1, vr2, el1, el2, az):
                 w[i, j] = U[1]
 
     return u, w
+
 
 def vr_variance(field, time, t_avg, axis=0):
     """
@@ -122,6 +131,7 @@ def vr_variance(field, time, t_avg, axis=0):
 
     return np.array(var), np.array(time_avg)
 
+
 def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
     """
     This function will work with LidarSim data
@@ -138,8 +148,9 @@ def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
         print('Not a valid scan type')
         return np.nan
 
-def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc, offset=None,
-                         time=None, missing=None):
+
+def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc,
+                         offset=None, time=None, missing=None):
     """
     This function puts vr observations from a RHI onto a vertical grid at one
     location to be used for virtual tower calculations
@@ -171,26 +182,34 @@ def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc, of
     if missing is not None:
         raw[raw == missing] = np.nan
 
-    x = ranges[None, :] * np.cos(np.deg2rad(el))[:, :, None]*np.sin(np.deg2rad(azimuth)) + offset[0]
-    y = ranges[None, :] * np.cos(np.deg2rad(el))[:, :, None]*np.cos(np.deg2rad(azimuth)) + offset[1]
+    x = (ranges[None, :] * np.cos(np.deg2rad(el))[:, :, None] *
+         np.sin(np.deg2rad(azimuth)) + offset[0])
+    y = (ranges[None, :] * np.cos(np.deg2rad(el))[:, :, None] *
+         np.cos(np.deg2rad(azimuth)) + offset[1])
     z = ranges[None, :] * np.sin(np.deg2rad(el))[:, :, None] + offset[2]
 
     r = np.sqrt(x**2 + y**2)
 
     z_interp = np.arange(heights[0], heights[1], dz)
 
-    z_ranges = np.sqrt((loc[0]-offset[0])**2 + (loc[1]-offset[1])**2+(z_interp-offset[2])**2)
-    z_el = np.rad2deg(np.arctan2(z_interp-offset[2], np.sqrt((loc[0]-offset[0])**2+
-                                                             (loc[1]-offset[1])**2)))
+    z_ranges = np.sqrt((loc[0]-offset[0])**2 +
+                       (loc[1]-offset[1])**2 + (z_interp-offset[2])**2)
+    z_el = np.rad2deg(np.arctan2(z_interp-offset[2],
+                                 np.sqrt((loc[0]-offset[0])**2 +
+                                         (loc[1]-offset[1])**2)))
 
     grid_field = []
-    grid_x, grid_z = np.meshgrid(np.array(np.sqrt(loc[0]**2 + loc[1]**2)), z_interp)
+    grid_x, grid_z = np.meshgrid(np.array(np.sqrt(loc[0]**2 + loc[1]**2)),
+                                 z_interp)
     for i in range(times):
-        grid_field.append(scipy.interpolate.griddata((r[i].ravel(), z[i].ravel()),
-                                                     raw[i].ravel(), (grid_x, grid_z))[:, 0])
+        grid_field.append(scipy.interpolate.griddata((r[i].ravel(),
+                                                      z[i].ravel()),
+                                                     raw[i].ravel(),
+                                                     (grid_x, grid_z))[:, 0])
 
-    return vertical_vr(grid_field, loc[0], loc[1], z_interp, dz, offset, z_el, z_ranges,
-                       azimuth, time)
+    return vertical_vr(grid_field, loc[0], loc[1], z_interp, dz, offset, z_el,
+                       z_ranges, azimuth, time)
+
 
 def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
     """
@@ -210,8 +229,10 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
                 u.append(np.nan)
                 v.append(np.nan)
 
-                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1)*np.cos(el1[i])],
-                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2)*np.cos(el2[i])]])
+                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1) *
+                               np.cos(el1[i])],
+                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2) *
+                               np.cos(el2[i])]])
                 invM = np.linalg.inv(M)
                 temp_u = np.sqrt((invM[0, 0]**2)*(uncertainty**2) +
                                  (invM[0, 1]**2)*(uncertainty**2))
@@ -221,8 +242,10 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
                 v_uncertainty.append(temp_v)
 
             else:
-                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1)*np.cos(el1[i])],
-                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2)*np.cos(el2[i])]])
+                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1) *
+                               np.cos(el1[i])],
+                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2) *
+                               np.cos(el2[i])]])
                 temp = np.linalg.solve(M, np.array([vr[0][i], vr[1][i]]))
                 u.append(np.copy(temp[0]))
                 v.append(np.copy(temp[1]))
@@ -255,9 +278,12 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
                 u.append(np.nan)
                 v.append(np.nan)
 
-                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1)*np.cos(el1[i]), np.sin(el1)],
-                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2)*np.cos(el2[i]), np.sin(el2)],
-                              [np.sin(az3)*np.cos(el3[i]), np.cos(az3)*np.cos(el3[i]),
+                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1) *
+                               np.cos(el1[i]), np.sin(el1)],
+                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2) *
+                               np.cos(el2[i]), np.sin(el2)],
+                              [np.sin(az3)*np.cos(el3[i]), np.cos(az3) *
+                               np.cos(el3[i]),
                                np.sin(el3)]])
                 invM = np.linalg.inv(M)
                 temp_u = np.sqrt((invM[0, 0]**2)*(uncertainty**2) +
@@ -274,11 +300,15 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
                 v_uncertainty.append(temp_v)
                 w_uncertainty.append(temp_w)
             else:
-                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1)*np.cos(el1[i]), np.sin(el1)],
-                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2)*np.cos(el2[i]), np.sin(el2)],
-                              [np.sin(az3)*np.cos(el3[i]), np.cos(az3)*np.cos(el3[i]),
+                M = np.array([[np.sin(az1)*np.cos(el1[i]), np.cos(az1) *
+                               np.cos(el1[i]), np.sin(el1)],
+                              [np.sin(az2)*np.cos(el2[i]), np.cos(az2) *
+                               np.cos(el2[i]), np.sin(el2)],
+                              [np.sin(az3)*np.cos(el3[i]), np.cos(az3) *
+                               np.cos(el3[i]),
                                np.sin(el3)]])
-                temp = np.linalg.solve(M, np.array([vr[0][i], vr[1][i], vr[2][i]]))
+                temp = np.linalg.solve(M, np.array([vr[0][i], vr[1][i],
+                                                    vr[2][i]]))
                 u.append(np.copy(temp[0]))
                 v.append(np.copy(temp[1]))
                 w.append(np.copy(temp[2]))
@@ -298,10 +328,12 @@ def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
                 v_uncertainty.append(temp_v)
                 w_uncertainty.append(temp_w)
 
-        return np.array([u, v, w]), np.array([u_uncertainty, v_uncertainty, w_uncertainty])
+        return np.array([u, v, w]), np.array([u_uncertainty, v_uncertainty,
+                                              w_uncertainty])
     else:
         print('Input needs to be a length 2 or 3 tuple')
         return np.nan
+
 
 def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
     """
@@ -317,8 +349,8 @@ def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
     prime = x - mean
     # Get the autocovariance
     acorr, lags = xcorr(prime, prime)
-    var = np.var(prime)
-    acov = acorr# * var
+    # var = np.var(prime)
+    acov = acorr  # * var
     # Extract lags > 0
     lags = lags[int(len(lags)/2):] * freq
     acov = acov[int(len(acov)/2):]
@@ -328,7 +360,7 @@ def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
     # Fit the structure function
     fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.)
     err_funct = lambda p, t, y: fit_funct(p, t) - y
-    p1, success = leastsq(err_funct, [1, .001], args=(lags[lag_start:lag_end],
+    p1, _ = leastsq(err_funct, [1, .001], args=(lags[lag_start:lag_end],
                                                       acov[lag_start:lag_end]))
     if plot:
         new_lags = np.arange(tau_min, tau_max)
@@ -340,19 +372,21 @@ def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
         plt.ylabel("$M_{11} [m^2s^{-2}$]")
     return p1[0], acov[0] - p1[0]
 
-def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=False):
+
+def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100,
+                  plot=False):
     """
-    This is a modified version of the Lenshow correction that adaptively selects
-    taus based on the data. This function was originally written by Tyler Bell
-    at CIMMS in Norman, OK.
+    This is a modified version of the Lenshow correction that adaptively
+    selects taus based on the data. This function was originally written by
+    Tyler Bell at CIMMS in Norman, OK.
     """
     # Find the perturbation of x
     mean = np.mean(x)
     prime = x - mean
     # Get the autocovariance
     acorr, lags = xcorr(prime, prime)
-    var = np.var(prime)
-    acov = acorr #* var
+    # var = np.var(prime)
+    acov = acorr  # * var
     # Extract lags > 0
     lags = lags[int(len(lags)/2):] * freq
     acov = acov[int(len(acov)/2):]
@@ -365,8 +399,8 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=F
     # Iterate to find t_int
     last_tint = (tau_min+3)
     i = 0
-    p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                        acov[lag_start:lag_end]))
+    p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
+                                                  acov[lag_start:lag_end]))
     tint = calc_tint(p1[0], freq, acov, lags)
     while np.abs(last_tint - tint) > 1.:
         if i >= max_iter:
@@ -374,8 +408,8 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=F
         else:
             i += 1
             last_tint = tint
-        p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                            acov[lag_start:lag_end]))
+        p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
+                                                      acov[lag_start:lag_end]))
         tint = calc_tint(p1[0], freq, acov, lags)
     # Find the time where M11(t) = M11(0)/2
     ind = np.min(np.where(acov <= acov[0]/2))
@@ -385,8 +419,8 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=F
     lag_end = int(tau_max / freq)
     if lag_start+1 >= lag_end:
         lag_end = lag_start + 2
-    p1, success = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                        acov[lag_start:lag_end]))
+    p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
+                                                  acov[lag_start:lag_end]))
     if plot:
         new_lags = np.arange(tau_min, tau_max)
         plt.plot(lags, acov, 'k')
@@ -397,12 +431,14 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100, plot=F
         plt.ylabel("$M_{11} [m^2s^{-2}$]")
     return p1[0], np.abs(acov[0] - p1[0]), tau_max
 
+
 def calc_tint(var, freq, acov, lags):
     """
     This function is used in the lenshow_bonin function
     """
     ind = np.min(np.where(acov < 0))
     return freq**-1. + 1./var * sum(acov[1:ind] / freq)
+
 
 def xcorr(y1, y2):
     """
@@ -412,13 +448,15 @@ def xcorr(y1, y2):
         raise ValueError('The lenghts of the inputs should be the same')
 
     corr = np.correlate(y1, y2, mode='full')
-    unbiased_size = np.correlate(np.ones(len(y1)), np.ones(len(y1)), mode='full')
+    unbiased_size = np.correlate(np.ones(len(y1)), np.ones(len(y1)),
+                                 mode='full')
     corr = corr/unbiased_size
 
     maxlags = len(y1)-1
     lags = np.arange(-maxlags, maxlags + 1)
 
     return corr, lags
+
 
 def read_cfradial(file_path):
     """
@@ -434,28 +472,33 @@ def read_cfradial(file_path):
     longitude = lidar_file.variables['longitude'][:]
     altitude = lidar_file.variables['altitude'][:]
     # convert start/end to datetimes so they're easier to use.
-    # times in cfradial files are in UTC. timezone is not specified in start_time attribute,
-    # but is specified as 'Z' instead of 'UTC' in start_datetime attribute, which datetime won't parse.
-    start = datetime.strptime(lidar_file.start_time, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
-    end = datetime.strptime(lidar_file.end_time, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+    # times in cfradial files are in UTC. timezone is not specified in
+    # start_time attribute, but is specified as 'Z' instead of 'UTC' in
+    # start_datetime attribute, which datetime won't parse.
+    start = datetime.strptime(lidar_file.start_time,
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+    end = datetime.strptime(lidar_file.end_time,
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
 
-    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude, longitude, altitude]
+    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
+            longitude, altitude]
 
 #############################################################################
 # This function uses consensus averaging to output an average given a window
 #############################################################################
 
-def consensus_avg(vals,window):
 
-    max_num_inds = 0 
+def consensus_avg(vals, window):
+
+    max_num_inds = 0
     vals = sorted(vals[~np.isnan(vals)])
 
     if vals == []:
         return np.nan
 
     for v in vals:
-        booleans = np.logical_and(vals >= v,vals <= v+window)
-        inds = np.where(booleans == True)[0]
+        booleans = np.logical_and(vals >= v, vals <= v+window)
+        inds = np.where(booleans)[0]
         num_inds = len(inds)
         val_range = vals[inds[-1]] - vals[inds[0]]
 

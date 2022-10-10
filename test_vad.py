@@ -23,20 +23,26 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
 @pytest.fixture
 def ppi():
     """ Read in PPI file """
-    ppi = PPI.fromFile(f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
-    ppi.threshold_cnr(-22) # use default threshold val in ppi_scans_to_vad of -22
+    ppi = PPI.fromFile(
+        f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    # use default threshold val in ppi_scans_to_vad of -22
+    ppi.threshold_cnr(-22)
     return ppi
+
 
 @pytest.fixture
 def ppis():
     """ Read in 3 PPI scans """
-    a = PPI.fromFile(f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
+    a = PPI.fromFile(
+        f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     a.threshold_cnr(-22)
-    b = PPI.fromFile(f"{datadir}/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
+    b = PPI.fromFile(
+        f"{datadir}/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
     b.threshold_cnr(-22)
-    c = PPI.fromFile(f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
+    c = PPI.fromFile(
+        f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
     c.threshold_cnr(-22)
-    return(a,b,c)
+    return(a, b, c)
 
 
 @pytest.fixture
@@ -44,7 +50,8 @@ def locations():
     x = pickle.load(open(f"{datadir}/vad/x.p", "rb"))
     y = pickle.load(open(f"{datadir}/vad/y.p", "rb"))
     z = pickle.load(open(f"{datadir}/vad/z.p", "rb"))
-    return(x,y,z)
+    return(x, y, z)
+
 
 @pytest.fixture
 def final_vad_winds():
@@ -53,13 +60,15 @@ def final_vad_winds():
     w = pickle.load(open(f"{datadir}/vad/w.p", "rb"))
     return (u, v, w)
 
+
 @pytest.fixture
 def final_vad_errs():
     du = pickle.load(open(f"{datadir}/vad/du.p", "rb"))
     dv = pickle.load(open(f"{datadir}/vad/dv.p", "rb"))
     dw = pickle.load(open(f"{datadir}/vad/dw.p", "rb"))
     return (du, dv, dw)
-    
+
+
 @pytest.fixture
 def derived_products():
     speed = pickle.load(open(f"{datadir}/vad/speed.p", "rb"))
@@ -68,12 +77,14 @@ def derived_products():
     cor = pickle.load(open(f"{datadir}/vad/correlation.p", "rb"))
     return (speed, wdir, res, cor)
 
+
 def test_xyz(ppi, locations):
     saved_x, saved_y, saved_z = locations
     x, y, z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
     assert_allclose(x, saved_x)
     assert_allclose(y, saved_y)
     assert_allclose(z, saved_z)
+
 
 def test_non_nan_idxs(ppi):
     idxs = non_nan_idxs(ppi.vr, 0)
@@ -89,6 +100,7 @@ def test_non_nan_idxs(ppi):
     saved_idxs = pickle.load(open(f"{datadir}/vad/foo3.p", "rb"))
     assert_allclose(idxs, saved_idxs)
 
+
 def test_calc_A(ppi):
     A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 0))
     saved_A = pickle.load(open(f"{datadir}/vad/A_0.p", "rb"))
@@ -103,6 +115,7 @@ def test_calc_A(ppi):
     saved_A = pickle.load(open(f"{datadir}/vad/A_3.p", "rb"))
     assert_allclose(A, saved_A)
 
+
 def test_calc_b(ppi):
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 0), 0)
     saved_b = pickle.load(open(f"{datadir}/vad/b_0.p", "rb"))
@@ -116,6 +129,7 @@ def test_calc_b(ppi):
     b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 3), 3)
     saved_b = pickle.load(open(f"{datadir}/vad/b_3.p", "rb"))
     assert_allclose(b, saved_b)
+
 
 def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     vad = VAD.calculate_ARM_VAD(ppi)
@@ -133,8 +147,10 @@ def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     assert_allclose(vad.residual, saved_res, equal_nan=True)
     assert_allclose(vad.correlation, saved_cor, equal_nan=True)
 
+
 def test_vadset_netcdf(ppis):
-    """ Compare data and data types between VADSet from VADs and VADSet from netcdf """
+    """ Compare data and data types between VADSet from VADs and VADSet from
+    netcdf """
     vads = []
     for p in ppis:
         vads.append(VAD.calculate_ARM_VAD(p))
@@ -183,6 +199,7 @@ def test_vadset_netcdf(ppis):
     assert type(vs.residual) == type(f.residual)
     assert_allclose(vs.correlation, f.correlation, equal_nan=True)
     assert type(vs.correlation) == type(f.correlation)
+
 
 def test_wind_from_uv():
     u = np.array([-1, np.NZERO, 0, 1, 0, -2, np.nan], dtype=float)

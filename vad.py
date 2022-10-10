@@ -9,50 +9,58 @@ import matplotlib.pyplot as plt
 
 import Lidar_functions
 
+
 def xyz(ranges, el, az):
-    """ Calculate x, y, and z coordinates from range, elevation, and azimuth """
+    """ Calculate x, y, and z coordinates from range, elevation, and azimuth
+    """
     # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
     x = ranges[None, :]*np.cos(np.radians(el))*np.sin(np.radians(az[:, None]))
     y = ranges[None, :]*np.cos(np.radians(el))*np.cos(np.radians(az[:, None]))
     z = ranges*np.sin(np.radians(el))
     return (x, y, z)
 
+
 def non_nan_idxs(vr, i):
-    """ This variable is used to index azimuths, but I'm not really sure why """
+    """ This variable is used to index azimuths, but I'm not really sure why
+    """
     return np.where(~np.isnan(vr[:, i]))[0]
+
 
 def calc_A(el, az, idxs):
     """ Calculate contents of A matrix """
     A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs]))**2)
-    A12 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *\
-            np.cos(np.deg2rad(az[idxs])))
-    A13 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-            np.sum(np.sin(np.deg2rad(az[idxs])))
+    A12 = ((np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *
+                                                np.cos(np.deg2rad(az[idxs]))))
+    A13 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *
+           np.sum(np.sin(np.deg2rad(az[idxs]))))
     A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[idxs]))**2)
-    A23 = (np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *\
-            np.sum(np.cos(np.deg2rad(az[idxs])))
+    A23 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *
+           np.sum(np.cos(np.deg2rad(az[idxs]))))
     A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
 
     A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
     return A
 
+
 def nan_if_masked(barray):
     return [b if not np.ma.is_masked(b) else np.nan for b in barray]
+
 
 def calc_b(el, az, vr, idxs, i):
     """ Calculate contents of b matrix """
     # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will be
-    # masked, and the np.array() creation will report a warning about converting
-    # a masked element to nan.  The best way I could figure out to avoid that warning
-    # was to explicitly convert a masked result.
+    # masked, and the np.array() creation will report a warning about
+    # converting a masked element to nan.  The best way I could figure out to
+    # avoid that warning was to explicitly convert a masked result.
     b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
-         np.sin(np.deg2rad(az[idxs])))
+                                         np.sin(np.deg2rad(az[idxs])))
     b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
-         np.cos(np.deg2rad(az[idxs])))
+                                         np.cos(np.deg2rad(az[idxs])))
     b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
 
     b = np.array(nan_if_masked([b1, b2, b3]))
     return b
+
 
 def wspd_wdir_from_uv(u, v):
     # calculate derived products
@@ -62,12 +70,14 @@ def wspd_wdir_from_uv(u, v):
     wdir[notnan] %= 360
     return speed, wdir
 
+
 class VAD:
     """
     This is a class created for VAD data
     """
 
-    def __init__(self, ppi, u, v, w, speed, wdir, du, dv, dw, z, residual, correlation):
+    def __init__(self, ppi, u, v, w, speed, wdir, du, dv, dw, z, residual,
+                 correlation):
         self.u = np.array(u)
         self.v = np.array(v)
         self.w = np.array(w)
@@ -92,7 +102,8 @@ class VAD:
     def calculate_ARM_VAD(cls, ppi, missing=None):
         """
         This function calculates VAD wind profiles using the technique shown in
-        Newsom et al. (2019). This function calculates VAD output for a single PPI scan.
+        Newsom et al. (2019). This function calculates VAD output for a single
+        PPI scan.
         vr: 2d array (azimuth x range)
         ranges: 1d array
         el: scalar
@@ -101,9 +112,9 @@ class VAD:
         # remove missing radial vel data
         if missing is not None:
             ppi.vr[ppi.vr == missing] = np.nan
-            
+
         # calculate XYZ coordinates of data
-        x,y,z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
+        x, y, z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
 
         u = np.ones(len(ppi.ranges))*np.nan
         v = np.ones(len(ppi.ranges))*np.nan
@@ -121,14 +132,14 @@ class VAD:
                 v[i] = np.nan
                 w[i] = np.nan
                 continue
-                
+
             A = calc_A(ppi.elevation, ppi.azimuth, idxs)
             invA = np.linalg.inv(A)
 
             du[i] = np.sqrt(invA[0, 0])
             dv[i] = np.sqrt(invA[1, 1])
             dw[i] = np.sqrt(invA[2, 2])
-            
+
             b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
             temp = invA.dot(b)
 
@@ -139,19 +150,20 @@ class VAD:
         # calculate derived products
         speed, wdir = wspd_wdir_from_uv(u, v)
 
-        residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)\
-                        [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2, axis=0))
+        residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)
+                           [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2,
+                                      axis=0))
         u_dot_r = ((u*x)+(v*y)+((w*z)[None, :]))/np.sqrt(x**2+y**2+z**2)
-        mean_u_dot_r = np.nanmean(((u*x)+(v*y)+((w*z)[None, :]))/\
-                       np.sqrt(x**2+y**2+z**2), axis=0)
+        mean_u_dot_r = np.nanmean(((u*x)+(v*y)+((w*z)[None, :])) /
+                                  np.sqrt(x**2+y**2+z**2), axis=0)
         mean_vr = np.nanmean(ppi.vr, axis=0)
-        correlation = np.nanmean((u_dot_r-mean_u_dot_r)*(ppi.vr-mean_vr), axis=0)/\
-                           (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))*\
-                            np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0)))
+        correlation = (np.nanmean((u_dot_r-mean_u_dot_r)*(ppi.vr-mean_vr),
+                                  axis=0) /
+                       (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))
+                        * np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0))))
 
         return cls(ppi, u, v, w, speed, wdir, du, dv, dw,
                    z, residual, correlation)
-
 
     def plot_(self, filename, plot_time=None, title=None):
         """
@@ -207,10 +219,11 @@ class VAD:
 
             plt.close()
 
-    def plot_comp(self, altitude, ws, wd, w, z, wprof_alt, filename, plot_time=None, title=None):
+    def plot_comp(self, altitude, ws, wd, w, z, wprof_alt, filename,
+                  plot_time=None, title=None):
         """
-        This function will plot wind profiles from the VAD object and Comparison to
-        other ws,wd,w,z
+        This function will plot wind profiles from the VAD object and
+        Comparison to other ws,wd,w,z
         """
         if plot_time is None:
             plot_time = len(self.time) - 1
@@ -270,15 +283,18 @@ class VAD:
 
             plt.close()
 
-    def create_ARM_nc(self, mean_cnr, max_cnr, altitude, latitude, longitude, stime, etime,
-                      file_path):
+    def create_ARM_nc(self, mean_cnr, max_cnr, altitude, latitude, longitude,
+                      stime, etime, file_path):
         """
         Create VAD output in ARM netCDF format
         """
-        str_start_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y-%m-%d %H:%M:%S')
-        str_day_start_time = dt.datetime.fromtimestamp(stime[0]).strftime('%Y-%m-%d')
-        secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',\
-                                                '%Y-%m-%d %H:%M:%S').timestamp()
+        str_start_time = dt.datetime.fromtimestamp(stime[0]).strftime(
+            '%Y-%m-%d %H:%M:%S')
+        str_day_start_time = dt.datetime.fromtimestamp(stime[0]).strftime(
+            '%Y-%m-%d')
+        start_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',
+                                          '%Y-%m-%d %H:%M:%S')
+        secs_midnight_time = start_time.timestamp()
         nc_file = netCDF4.Dataset(file_path, 'w', format='NETCDF4')
         nc_file.createDimension('time', None)
         nc_file.createDimension('height', len(self.z))
@@ -292,14 +308,15 @@ class VAD:
         time_offset = nc_file.createVariable('time_offset', 'd', 'time')
         time_offset[:] = np.array(stime) - stime[0]
         time_offset.long_name = 'Time offset from base_time'
-        time_offset.units = 'seconds since '+ str_start_time
+        time_offset.units = 'seconds since ' + str_start_time
         time_offset.ancillary_variables = "base_time"
         stimes = nc_file.createVariable('time', 'd', 'time')
         stimes[:] = np.array(stime) - secs_midnight_time
         stimes.long_name = 'Time offset from midnight'
         stimes.units = 'seconds since ' + str_day_start_time + ' 00:00:00'
         stimes.bounds = 'time_bounds'
-        time_bounds = nc_file.createVariable('time_bounds', 'd', ('time', 'bound'))
+        time_bounds = nc_file.createVariable('time_bounds', 'd',
+                                             ('time', 'bound'))
         time_bounds[:, :] = list(zip(stime, etime))
         height = nc_file.createVariable('height', 'f', 'height')
         height[:] = self.z
@@ -310,13 +327,15 @@ class VAD:
         scan_duration[:] = np.subtract(etime, stime)
         scan_duration.long_name = 'PPI scan duration'
         scan_duration.units = 'second'
-        elevation_angle = nc_file.createVariable('elevation_angle', 'f', 'time')
+        elevation_angle = nc_file.createVariable('elevation_angle', 'f',
+                                                 'time')
         elevation_angle[:] = self.el
         elevation_angle.long_name = 'Beam elevation angle'
         elevation_angle.units = 'degree'
         nbeams = nc_file.createVariable('nbeams', 'i', 'time')
         nbeams[:] = self.nbeams
-        nbeams.long_name = 'Number of beams (azimuth angles) used in wind vector estimations'
+        nbeams.long_name = ('Number of beams (azimuth angles) used in wind'
+                            ' vector estimations')
         nbeams.units = 'unitless'
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u[:, :] = self.u
@@ -324,7 +343,8 @@ class VAD:
         u.units = 'm/s'
         u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
         u_error[:, :] = self.du
-        u_error.long_name = 'Estimated error in eastward component of wind vector'
+        u_error.long_name = ('Estimated error in eastward component of wind'
+                             ' vector')
         u_error.units = 'm/s'
         v = nc_file.createVariable('v', 'f', ('time', 'height'))
         v[:, :] = self.v
@@ -332,7 +352,8 @@ class VAD:
         v.units = 'm/s'
         v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
         v_error[:, :] = self.dv
-        v_error.long_name = 'Estimated error in northward component of wind vector'
+        v_error.long_name = ('Estimated error in northward component of wind'
+                             ' vector')
         v_error.units = 'm/s'
         w = nc_file.createVariable('w', 'f', ('time', 'height'))
         w[:, :] = self.w
@@ -340,22 +361,26 @@ class VAD:
         w.units = 'm/s'
         w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
         w_error[:, :] = self.dw
-        w_error.long_name = 'Estimated error in vertical component of wind vector'
+        w_error.long_name = ('Estimated error in vertical component of wind'
+                             ' vector')
         w_error.units = 'm/s'
-        wind_speed = nc_file.createVariable('wind_speed', 'f', ('time', 'height'))
+        wind_speed = nc_file.createVariable('wind_speed', 'f',
+                                            ('time', 'height'))
         wind_speed[:, :] = self.speed
         wind_speed.long_name = 'Wind speed'
         wind_speed.units = 'm/s'
-        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f', ('time', 'height'))
+        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
+                                                  ('time', 'height'))
         wind_speed_error[:, :] = [np.zeros(len(self.z))*np.nan]
         wind_speed_error.long_name = 'Wind speed error'
         wind_speed_error.units = 'm/s'
-        wind_direction = nc_file.createVariable('wind_direction', 'f', ('time', 'height'))
+        wind_direction = nc_file.createVariable('wind_direction', 'f',
+                                                ('time', 'height'))
         wind_direction[:, :] = self.wdir
         wind_direction.long_name = 'Wind direction'
         wind_direction.units = 'degree'
-        wind_direction_error = nc_file.createVariable('wind_direction_error', 'f', ('time',
-                                                                                    'height'))
+        wind_direction_error = nc_file.createVariable('wind_direction_error',
+                                                      'f', ('time', 'height'))
         wind_direction_error[:, :] = [np.zeros(len(self.z))*np.nan]
         wind_direction_error.long_name = 'Wind direction error'
         wind_direction_error.units = 'm/s'
@@ -363,7 +388,8 @@ class VAD:
         residual[:, :] = self.residual
         residual.long_name = 'Fit residual'
         residual.units = 'm/s'
-        correlation = nc_file.createVariable('correlation', 'f', ('time', 'height'))
+        correlation = nc_file.createVariable('correlation', 'f',
+                                             ('time', 'height'))
         correlation[:, :] = self.correlation
         correlation.long_name = 'Fit correlation coefficient'
         correlation.units = 'unitless'
@@ -396,15 +422,17 @@ class VAD:
         alt.standard_name = 'altitude'
 
         nc_file.Conventions = 'ARM-1.1'
-        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S UTC')
+        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
+            '%Y/%m/%d %H:%M:%S UTC')
 
         nc_file.close()
+
 
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
 
     def __init__(self, mean_cnr, min_cnr, alt, lat, lon, height,
-                 stime,etime, el, nbeams, u, du, v, dv, w, dw, speed, wdir,
+                 stime, etime, el, nbeams, u, du, v, dv, w, dw, speed, wdir,
                  residual, correlation):
         self.mean_cnr = mean_cnr
         self.min_cnr = min_cnr
@@ -426,7 +454,7 @@ class VADSet:
         self.wdir = wdir
         self.residual = residual
         self.correlation = correlation
-    
+
     @classmethod
     def from_VADs(cls, vads, min_cnr):
         return cls(np.array([i.mean_cnr for i in vads]),
@@ -435,7 +463,8 @@ class VADSet:
                    vads[0].alt,
                    vads[0].lat,
                    vads[0].lon,
-                   # currently we assume that heights are the same for all VAD in a set
+                   # currently we assume that heights are the same for all VAD
+                   # in a set
                    vads[0].z,
                    # lists of datetime objects, tz-aware
                    [i.stime for i in vads],
@@ -458,9 +487,16 @@ class VADSet:
     def from_file(cls, filename):
         """ Create a VADSet object from a daily VAD netcdf file """
         f = netCDF4.Dataset(filename, 'r')
-        stime = list(netCDF4.num2date(f.variables['time'][:], f.variables['time'].units, only_use_python_datetimes=True, only_use_cftime_datetimes=False))
+        stime = list(netCDF4.num2date(f.variables['time'][:],
+                                      f.variables['time'].units,
+                                      only_use_python_datetimes=True,
+                                      only_use_cftime_datetimes=False))
         # reconstitute endtime from scan duration
-        etime = list(netCDF4.num2date(f.variables['time'][:] + f.variables['scan_duration'], f.variables['time'].units, only_use_python_datetimes=True, only_use_cftime_datetimes=False))
+        etime = list(netCDF4.num2date(f.variables['time'][:] +
+                                      f.variables['scan_duration'],
+                                      f.variables['time'].units,
+                                      only_use_python_datetimes=True,
+                                      only_use_cftime_datetimes=False))
         # make dates tz aware
         stime = [s.replace(tzinfo=pytz.utc) for s in stime]
         etime = [e.replace(tzinfo=pytz.utc) for e in etime]
@@ -487,44 +523,49 @@ class VADSet:
                    np.array(f.variables['correlation'][:]))
 
     def consensus_average(self, ranges):
-        """ Return consensus averaged u,v,w for 30-min increments starting at list of time ranges """
-        u_mean = np.zeros((len(ranges),len(self.height)))
-        v_mean = np.zeros((len(ranges),len(self.height)))
-        w_mean = np.zeros((len(ranges),len(self.height)))
+        """ Return consensus averaged u,v,w for 30-min increments starting at
+        list of time ranges """
+        u_mean = np.zeros((len(ranges), len(self.height)))
+        v_mean = np.zeros((len(ranges), len(self.height)))
+        w_mean = np.zeros((len(ranges), len(self.height)))
 
-        #for ind_start in range(len(secs)-1):
+        # for ind_start in range(len(secs)-1):
         for idx, r in enumerate(ranges):
             start = r
-            end = start + dt.timedelta(minutes=30) 
-            thirty_min_ind = [i for i in range(len(self.stime))\
-                              if self.stime[i] >= start and\
+            end = start + dt.timedelta(minutes=30)
+            thirty_min_ind = [i for i in range(len(self.stime))
+                              if self.stime[i] >= start and
                               self.stime[i] < end]
 
             if len(thirty_min_ind) == 0:
-                u_mean[idx,:] = np.nan
-                v_mean[idx,:] = np.nan
-                w_mean[idx,:] = np.nan
+                u_mean[idx, :] = np.nan
+                v_mean[idx, :] = np.nan
+                w_mean[idx, :] = np.nan
                 continue
 
-            u_all = np.array([self.u[i] for i in thirty_min_ind]) 
-            v_all = np.array([self.v[i] for i in thirty_min_ind]) 
-            w_all = np.array([self.w[i] for i in thirty_min_ind]) 
+            u_all = np.array([self.u[i] for i in thirty_min_ind])
+            v_all = np.array([self.v[i] for i in thirty_min_ind])
+            w_all = np.array([self.w[i] for i in thirty_min_ind])
 
             for hgt in range(len(self.height)):
-            # run consensus averaging with a window of 5 m/s
-                u_mean[idx,hgt] = Lidar_functions.consensus_avg(u_all[:,hgt],5)  
-                v_mean[idx,hgt] = Lidar_functions.consensus_avg(v_all[:,hgt],5)  
-                w_mean[idx,hgt] = Lidar_functions.consensus_avg(w_all[:,hgt],5)  
+                # run consensus averaging with a window of 5 m/s
+                u_mean[idx, hgt] = Lidar_functions.consensus_avg(u_all[:, hgt],
+                                                                 5)
+                v_mean[idx, hgt] = Lidar_functions.consensus_avg(v_all[:, hgt],
+                                                                 5)
+                w_mean[idx, hgt] = Lidar_functions.consensus_avg(w_all[:, hgt],
+                                                                 5)
         return (u_mean, v_mean, w_mean)
 
     def to_ARM_netcdf(self, filepath):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
         str_day_start_time = self.stime[0].strftime('%Y-%m-%d')
-        secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',\
+        secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',
                                                 '%Y-%m-%d %H:%M:%S').timestamp()
         nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
         nc_file.createDimension('time', None)
-        # still currently assuming that all files in a VADSet have the same heights
+        # still currently assuming that all files in a VADSet have the same
+        # heights
         nc_file.createDimension('height', len(self.height))
         nc_file.createDimension('bound', 2)
         base_time = nc_file.createVariable('base_time', 'i')
@@ -535,7 +576,7 @@ class VADSet:
         base_time[:] = netCDF4.date2num(self.stime[0], base_time.units)
         time_offset = nc_file.createVariable('time_offset', 'd', 'time')
         time_offset.long_name = 'Time offset from base_time'
-        time_offset.units = 'seconds since '+ str_start_time
+        time_offset.units = 'seconds since ' + str_start_time
         time_offset.ancillary_variables = "base_time"
         time_offset[:] = netCDF4.date2num(self.stime, time_offset.units)
         stimes = nc_file.createVariable('time', 'd', 'time')
@@ -543,24 +584,31 @@ class VADSet:
         stimes.units = 'seconds since ' + str_day_start_time + ' 00:00:00 UTC'
         stimes.bounds = 'time_bounds'
         stimes[:] = netCDF4.date2num(self.stime, stimes.units)
-        time_bounds = nc_file.createVariable('time_bounds', 'd', ('time', 'bound'))
-        time_bounds[:, :] = list(zip(netCDF4.date2num(self.stime, base_time.units), netCDF4.date2num(self.etime, base_time.units)))
+        time_bounds = nc_file.createVariable('time_bounds', 'd',
+                                             ('time', 'bound'))
+        time_bounds[:, :] = list(zip(netCDF4.date2num(self.stime,
+                                                      base_time.units),
+                                     netCDF4.date2num(self.etime,
+                                                      base_time.units)))
         height = nc_file.createVariable('height', 'f', 'height')
         height[:] = self.height
         height.long_name = 'Height above ground level'
         height.units = 'm'
         height.standard_name = 'height'
         scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
-        scan_duration[:] = [(i[0] - i[1]).total_seconds() for i in zip(self.etime, self.stime)]
+        scan_duration[:] = [(i[0] - i[1]).total_seconds()
+                            for i in zip(self.etime, self.stime)]
         scan_duration.long_name = 'PPI scan duration'
         scan_duration.units = 'second'
-        elevation_angle = nc_file.createVariable('elevation_angle', 'f', 'time')
+        elevation_angle = nc_file.createVariable('elevation_angle', 'f',
+                                                 'time')
         elevation_angle[:] = self.el
         elevation_angle.long_name = 'Beam elevation angle'
         elevation_angle.units = 'degree'
         nbeams = nc_file.createVariable('nbeams', 'i', 'time')
         nbeams[:] = self.nbeams
-        nbeams.long_name = 'Number of beams (azimuth angles) used in wind vector estimations'
+        nbeams.long_name = ('Number of beams (azimuth angles) used in wind'
+                            ' vector estimations')
         nbeams.units = 'unitless'
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u[:, :] = self.u
@@ -568,7 +616,8 @@ class VADSet:
         u.units = 'm/s'
         u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
         u_error[:, :] = self.du
-        u_error.long_name = 'Estimated error in eastward component of wind vector'
+        u_error.long_name = ('Estimated error in eastward component of wind'
+                             ' vector')
         u_error.units = 'm/s'
         v = nc_file.createVariable('v', 'f', ('time', 'height'))
         v[:, :] = self.v
@@ -576,7 +625,8 @@ class VADSet:
         v.units = 'm/s'
         v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
         v_error[:, :] = self.dv
-        v_error.long_name = 'Estimated error in northward component of wind vector'
+        v_error.long_name = ('Estimated error in northward component of wind'
+                             ' vector')
         v_error.units = 'm/s'
         w = nc_file.createVariable('w', 'f', ('time', 'height'))
         w[:, :] = self.w
@@ -584,35 +634,41 @@ class VADSet:
         w.units = 'm/s'
         w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
         w_error[:, :] = self.dw
-        w_error.long_name = 'Estimated error in vertical component of wind vector'
+        w_error.long_name = ('Estimated error in vertical component of wind'
+                             ' vector')
         w_error.units = 'm/s'
-        wind_speed = nc_file.createVariable('wind_speed', 'f', ('time', 'height'))
+        wind_speed = nc_file.createVariable('wind_speed', 'f',
+                                            ('time', 'height'))
         wind_speed[:, :] = self.speed
         wind_speed.long_name = 'Wind speed'
         wind_speed.units = 'm/s'
-        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f', ('time', 'height'))
+        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
+                                                  ('time', 'height'))
         # not currently calculating wind speed error?
-        wind_speed_error[:, :] = wind_speed[:,:] * np.nan
+        wind_speed_error[:, :] = wind_speed[:, :] * np.nan
         wind_speed_error.long_name = 'Wind speed error'
         wind_speed_error.units = 'm/s'
-        wind_direction = nc_file.createVariable('wind_direction', 'f', ('time', 'height'))
+        wind_direction = nc_file.createVariable('wind_direction', 'f',
+                                                ('time', 'height'))
         wind_direction[:, :] = self.wdir
         wind_direction.long_name = 'Wind direction'
         wind_direction.units = 'degree'
-        wind_direction_error = nc_file.createVariable('wind_direction_error', 'f', ('time',
-                                                                                    'height'))
-        wind_direction_error[:, :] = wind_direction[:,:] * np.nan
+        wind_direction_error = nc_file.createVariable('wind_direction_error',
+                                                      'f', ('time', 'height'))
+        wind_direction_error[:, :] = wind_direction[:, :] * np.nan
         wind_direction_error.long_name = 'Wind direction error'
         wind_direction_error.units = 'm/s'
         residual = nc_file.createVariable('residual', 'f', ('time', 'height'))
         residual[:, :] = self.residual
         residual.long_name = 'Fit residual'
         residual.units = 'm/s'
-        correlation = nc_file.createVariable('correlation', 'f', ('time', 'height'))
+        correlation = nc_file.createVariable('correlation', 'f',
+                                             ('time', 'height'))
         correlation[:, :] = self.correlation
         correlation.long_name = 'Fit correlation coefficient'
         correlation.units = 'unitless'
-        mean_snr = nc_file.createVariable('mean_snr', 'f', ('time', 'height'))
+        mean_snr = nc_file.createVariable('mean_snr', 'f',
+                                          ('time', 'height'))
         mean_snr[:, :] = self.mean_cnr
         mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
         mean_snr.units = 'unitless'
@@ -641,7 +697,7 @@ class VADSet:
         alt.standard_name = 'altitude'
 
         nc_file.Conventions = 'ARM-1.1'
-        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S UTC')
+        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
+            '%Y/%m/%d %H:%M:%S UTC')
 
         nc_file.close()
-

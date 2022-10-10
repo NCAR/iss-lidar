@@ -3,11 +3,12 @@
 # pylint: disable=C0103,E1101
 
 """
-Decoder for raw .hpl files that are outputted by the Halo Photonics doppler lidar.
-Many things are hard coded and should be documented with in-line comments. Outputs
-decoded data to netcdf-4. May have to change the 'lookup' variable to account for
-different header info. Though not originally coded to decode RHI scans, it shouldn't
-be a problem as long as it is specified in the lookup table
+Decoder for raw .hpl files that are outputted by the Halo Photonics doppler
+lidar. Many things are hard coded and should be documented with in-line
+comments. Outputs decoded data to netcdf-4. May have to change the 'lookup'
+variable to account for different header info. Though not originally coded to
+decode RHI scans, it shouldn't be a problem as long as it is specified in the
+lookup table
 
 
 Original Author: Tyler Bell - University of Oklahoma (March 2017)
@@ -46,7 +47,7 @@ def decode_header(header):
 
     for item in header:
         split = item.split('\t')
-        #new_header[split[0].replace(':', '')] = split[1].replace("\r\n", "")
+        # new_header[split[0].replace(':', '')] = split[1].replace("\r\n", "")
         new_header[split[0].replace(':', '')] = split[1].strip()
 
     return new_header
@@ -125,7 +126,8 @@ def process_file(in_file, out_dir, prefix):
     time = []
     epoch = []
     for h in hour:
-        dt = datetime(start_time.year, start_time.month, start_time.day) + timedelta(hours=h)
+        dt = datetime(start_time.year, start_time.month,
+                      start_time.day) + timedelta(hours=h)
         time.append(dt)
         epoch.append(_to_epoch(dt))
 
@@ -135,14 +137,17 @@ def process_file(in_file, out_dir, prefix):
     time_offset = epoch - base_time
 
     # Figure out netcdf attrs
-    nc_attrs = {'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S')}  # None right now
+    nc_attrs = {'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S')}
+    # None right now
 
     # Get the filename figured out
     if prefix is None:
-        filename = start_time.strftime("{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type))
+        filename = start_time.strftime(
+            "{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type))
     else:
-        filename = start_time.strftime("{prefix}_{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type,
-                                                                                 prefix=prefix))
+        filename = start_time.strftime(
+            "{prefix}_{type}_%Y%m%d_%H%M%S.nc".format(type=scan_type,
+                                                      prefix=prefix))
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -254,9 +259,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.verbose:
-        logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.DEBUG)
+        logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
+                            level=logging.DEBUG)
     else:
-        logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=logging.INFO)
+        logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
+                            level=logging.INFO)
 
     for f in args.in_files:
         logging.info('Processing file %s' % f)
