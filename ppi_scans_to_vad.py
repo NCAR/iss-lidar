@@ -71,7 +71,6 @@ def save(vadset, destdir, prefix=None):
 
 def main():
     args = createParser()
-    print(type(args.ppifiles))
     # try to allow either list of files created by shell glob or expression to
     # pass to python glob
     ppi_scans = args.ppifiles
