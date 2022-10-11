@@ -6,8 +6,10 @@ import pytz
 import numpy as np
 import netCDF4
 import matplotlib.pyplot as plt
+from typing import Tuple, List
 
 import Lidar_functions
+from ppi import PPI
 
 
 class VAD:
@@ -16,7 +18,10 @@ class VAD:
     """
 
     @staticmethod
-    def xyz(ranges, el, az):
+    def xyz(ranges: np.ma.MaskedArray, el: np.ma.MaskedArray,
+            az: np.ma.MaskedArray) -> Tuple[np.ma.MaskedArray,
+                                            np.ma.MaskedArray,
+                                            np.ma.MaskedArray]:
         """ Calculate x, y, and z coordinates from range, elevation, and azimuth
         """
         # [None,:] / [:, None] syntax creates 2d array from 1d range and
@@ -29,13 +34,14 @@ class VAD:
         return (x, y, z)
 
     @staticmethod
-    def non_nan_idxs(vr, i):
+    def non_nan_idxs(vr: np.ma.MaskedArray, i: int) -> np.ma.MaskedArray:
         """ This variable is used to index azimuths, but I'm not really sure why
         """
         return np.where(~np.isnan(vr[:, i]))[0]
 
     @staticmethod
-    def calc_A(el, az, idxs):
+    def calc_A(el: np.ma.MaskedArray, az: np.ma.MaskedArray,
+               idxs: np.ndarray) -> np.ndarray:
         """ Calculate contents of A matrix """
         A11 = ((np.cos(np.deg2rad(el))**2)
                * np.sum(np.sin(np.deg2rad(az[idxs]))**2))
@@ -54,11 +60,12 @@ class VAD:
         return A
 
     @staticmethod
-    def nan_if_masked(barray):
+    def nan_if_masked(barray: list) -> list:
         return [b if not np.ma.is_masked(b) else np.nan for b in barray]
 
     @staticmethod
-    def calc_b(el, az, vr, idxs, i):
+    def calc_b(el: np.ma.MaskedArray, az: np.ma.MaskedArray,
+               vr: np.ma.MaskedArray, idxs: np.ndarray, i: int) -> np.ndarray:
         """ Calculate contents of b matrix """
         # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will
         # be masked, and the np.array() creation will report a warning about
@@ -74,7 +81,8 @@ class VAD:
         return b
 
     @staticmethod
-    def wspd_wdir_from_uv(u, v):
+    def wspd_wdir_from_uv(u: np.ndarray,
+                          v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         # calculate derived products
         speed = np.sqrt(u**2 + v**2)
         wdir = 270 - np.rad2deg(np.arctan2(v, u))
@@ -82,8 +90,10 @@ class VAD:
         wdir[notnan] %= 360
         return speed, wdir
 
-    def __init__(self, ppi, u, v, w, speed, wdir, du, dv, dw, z, residual,
-                 correlation):
+    def __init__(self, ppi: PPI, u: np.ndarray, v: np.ndarray, w: np.ndarray,
+                 speed: np.ndarray, wdir: np.ndarray, du: np.ndarray,
+                 dv: np.ndarray, dw: np.ndarray, z: np.ndarray,
+                 residual: np.ndarray, correlation: np.ndarray):
         self.u = np.array(u)
         self.v = np.array(v)
         self.w = np.array(w)
@@ -105,7 +115,7 @@ class VAD:
         self.mean_cnr = ppi.mean_cnr()
 
     @classmethod
-    def calculate_ARM_VAD(cls, ppi, missing=None):
+    def calculate_ARM_VAD(cls, ppi: PPI, missing=None):
         """
         This function calculates VAD wind profiles using the technique shown in
         Newsom et al. (2019). This function calculates VAD output for a single
@@ -171,7 +181,7 @@ class VAD:
         return cls(ppi, u, v, w, speed, wdir, du, dv, dw,
                    z, residual, correlation)
 
-    def plot_(self, filename, plot_time=None, title=None):
+    def plot_(self, filename: str, plot_time: int = None, title: str = None):
         """
         This function will plot wind profiles from the VAD object
         """
@@ -225,8 +235,9 @@ class VAD:
 
             plt.close()
 
-    def plot_comp(self, altitude, ws, wd, w, z, wprof_alt, filename,
-                  plot_time=None, title=None):
+    def plot_comp(self, altitude: float, ws: np.ndarray, wd: np.ndarray,
+                  w: np.ndarray, z: np.ndarray, wprof_alt: float,
+                  filename: str, plot_time: int = None, title: str = None):
         """
         This function will plot wind profiles from the VAD object and
         Comparison to other ws,wd,w,z
@@ -289,8 +300,9 @@ class VAD:
 
             plt.close()
 
-    def create_ARM_nc(self, mean_cnr, max_cnr, altitude, latitude, longitude,
-                      stime, etime, file_path):
+    def create_ARM_nc(self, mean_cnr: np.ndarray, max_cnr: float,
+                      altitude: float, latitude: float, longitude: float,
+                      stime: list, etime: list, file_path: str):
         """
         Create VAD output in ARM netCDF format
         """
@@ -437,9 +449,14 @@ class VAD:
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
 
-    def __init__(self, mean_cnr, min_cnr, alt, lat, lon, height,
-                 stime, etime, el, nbeams, u, du, v, dv, w, dw, speed, wdir,
-                 residual, correlation):
+    def __init__(self, mean_cnr: np.ndarray, min_cnr: int,
+                 alt: np.ma.MaskedArray, lat: np.ma.MaskedArray,
+                 lon: np.ma.MaskedArray, height: np.ma.MaskedArray,
+                 stime: list, etime: list, el: list, nbeams: list,
+                 u: np.ndarray, du: np.ndarray, v: np.ndarray,
+                 dv: np.ndarray, w: np.ndarray, dw: np.ndarray,
+                 speed: np.ndarray, wdir: np.ndarray,
+                 residual: np.ndarray, correlation: np.ndarray):
         self.mean_cnr = mean_cnr
         self.min_cnr = min_cnr
         self.alt = alt
@@ -462,7 +479,7 @@ class VADSet:
         self.correlation = correlation
 
     @classmethod
-    def from_VADs(cls, vads, min_cnr):
+    def from_VADs(cls, vads: List[VAD], min_cnr: int):
         return cls(np.array([i.mean_cnr for i in vads]),
                    min_cnr,
                    # use any vad for location, presumably it doesn't change
@@ -490,7 +507,7 @@ class VADSet:
                    np.array([i.correlation for i in vads]))
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename: str):
         """ Create a VADSet object from a daily VAD netcdf file """
         f = netCDF4.Dataset(filename, 'r')
         stime = list(netCDF4.num2date(f.variables['time'][:],
@@ -528,7 +545,8 @@ class VADSet:
                    np.array(f.variables['residual'][:]),
                    np.array(f.variables['correlation'][:]))
 
-    def consensus_average(self, ranges):
+    def consensus_average(self, ranges: list) -> Tuple[np.ndarray, np.ndarray,
+                                                       np.ndarray]:
         """ Return consensus averaged u,v,w for 30-min increments starting at
         list of time ranges """
         u_mean = np.zeros((len(ranges), len(self.height)))
@@ -563,7 +581,7 @@ class VADSet:
                                                                  5)
         return (u_mean, v_mean, w_mean)
 
-    def to_ARM_netcdf(self, filepath):
+    def to_ARM_netcdf(self, filepath: str):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
         str_day_start_time = self.stime[0].strftime('%Y-%m-%d')
         nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')

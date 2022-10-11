@@ -15,6 +15,7 @@ import argparse
 import numpy as np
 from vad import VAD, VADSet
 from ppi import PPI
+from typing import List
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
@@ -30,13 +31,13 @@ def createParser():
     return parser.parse_args()
 
 
-def selectFiles(path):
+def selectFiles(path: str):
     # expand glob expression if it didn't get expanded in the shell
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
 
-def process(ppi_files, min_cnr):
+def process(ppi_files: List[str], min_cnr: int):
     vads = []
 
     for f in ppi_files:
@@ -59,7 +60,7 @@ def process(ppi_files, min_cnr):
     return vadset
 
 
-def save(vadset, destdir, prefix=None):
+def save(vadset: VADSet, destdir: str, prefix: str = None):
     filename_time = vadset.stime[0].strftime('%Y%m%d')
     final_file_name = 'VAD_'
     if prefix:

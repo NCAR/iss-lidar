@@ -19,6 +19,7 @@ import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from vad import VADSet
+from typing import List
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
@@ -35,7 +36,7 @@ def parseArgs():
     return parser.parse_args()
 
 
-def create_time_ranges(day):
+def create_time_ranges(day: dt.date) -> List[dt.datetime]:
     """ Create a list of datetimes every 30 minutes for given day """
     start = dt.datetime(day.year, day.month, day.day, tzinfo=pytz.UTC)
     end = start + dt.timedelta(days=1)
@@ -46,7 +47,8 @@ def create_time_ranges(day):
     return ranges
 
 
-def plot(final_path, u_mean, v_mean, ranges, heights):
+def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
+         ranges: np.ndarray, heights: np.ndarray):
     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     fig.suptitle('SWEX 30 minute winds starting at %s 00:00:00 for 24 hours'
@@ -66,8 +68,9 @@ def plot(final_path, u_mean, v_mean, ranges, heights):
     plt.close()
 
 
-def write_netcdf(final_path, ranges, vadset, u_mean, v_mean, w_mean,
-                 prefix=None):
+def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
+                 u_mean: np.ndarray, v_mean: np.ndarray, w_mean: np.ndarray,
+                 prefix: str = None):
     # create netCDF file
     filepath = "30min_winds_"
     if prefix:

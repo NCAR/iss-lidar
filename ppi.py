@@ -3,13 +3,18 @@
 import numpy as np
 import numpy.ma as ma
 import Lidar_functions
+from datetime import datetime
 
 
 class PPI:
 
-    def __init__(self, cnr=None, ranges=None, vr=None, elevation=None,
-                 azimuth=None, starttime=None, endtime=None, lat=None,
-                 lon=None, alt=None):
+    def __init__(self, cnr: np.ma.MaskedArray = None,
+                 ranges: np.ma.MaskedArray = None,
+                 vr: np.ma.MaskedArray = None,
+                 elevation: np.ma.MaskedArray = None,
+                 azimuth: np.ma.MaskedArray = None, starttime: datetime = None,
+                 endtime: datetime = None, lat: np.ma.MaskedArray = None,
+                 lon: np.ma.MaskedArray = None, alt: np.ma.MaskedArray = None):
         """ Create PPI object from numpy arrays of data"""
         self.cnr = cnr
         self.ranges = ranges
@@ -23,18 +28,18 @@ class PPI:
         self.alt = alt
 
     @classmethod
-    def fromFile(cls, filename):
+    def fromFile(cls, filename: str):
         """ Create PPI object by reading cfradial scan file """
         [cnr, ranges, vr, elevation, azimuth, starttime, endtime, lat, lon,
          alt] = Lidar_functions.read_cfradial(filename)
         return cls(cnr, ranges, vr, elevation, azimuth, starttime, endtime,
                    lat, lon, alt)
 
-    def threshold_cnr(self, max_cnr):
+    def threshold_cnr(self, max_cnr: int):
         """ Set vr to nan if cnr is below threshold """
         self.vr = ma.masked_where(self.cnr < max_cnr, self.vr)
 
-    def mean_cnr(self):
+    def mean_cnr(self) -> np.ndarray:
         """ Return mean value of CNR """
         return np.nanmean(self.cnr, axis=0)
 
