@@ -140,7 +140,7 @@ def process_LidarSim_scan(scan, scantype, elevation, azimuth, ranges, time):
     from vad import VAD
     if scantype == 'vad':
         el = np.nanmean(elevation)
-        vad = ARM_VAD(scan, ranges, el, azimuth, time)
+        vad = VAD.ARM_VAD(scan, ranges, el, azimuth, time)
 
         return vad
 
@@ -207,8 +207,9 @@ def rhi_vertical_profile(field, elevation, azimuth, ranges, heights, dz, loc,
                                                      raw[i].ravel(),
                                                      (grid_x, grid_z))[:, 0])
 
-    return vertical_vr(grid_field, loc[0], loc[1], z_interp, dz, offset, z_el,
-                       z_ranges, azimuth, time)
+    # no vertical_vr object/function included in Josh's code, ignore error
+    return vertical_vr(grid_field, loc[0], loc[1], z_interp,  # noqa: F821
+                       dz, offset, z_el, z_ranges, azimuth, time)
 
 
 def virtual_tower(vr, elevation, azimuth, height, uncertainty=0.45):
@@ -358,10 +359,10 @@ def lenshow(x, freq=1, tau_min=3, tau_max=12, plot=False):
     lag_start = int(tau_min / freq)
     lag_end = int(tau_max / freq)
     # Fit the structure function
-    fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.)
-    err_funct = lambda p, t, y: fit_funct(p, t) - y
-    p1, _ = leastsq(err_funct, [1, .001], args=(lags[lag_start:lag_end],
-                                                      acov[lag_start:lag_end]))
+    # don't kow which leastsq fn this is referencing
+    p1, _ = leastsq(err_funct, [1, .001],  # noqa: F821
+                    args=(lags[lag_start:lag_end],
+                    acov[lag_start:lag_end]))
     if plot:
         new_lags = np.arange(tau_min, tau_max)
         plt.plot(lags, acov)
@@ -394,13 +395,15 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100,
     lag_start = int(tau_min / freq)
     lag_end = int((tau_min+3) / freq)
     # Fit the structure function
-    fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.)
-    err_funct = lambda p, t, y: fit_funct(p, t) - y
+    # fit_funct = lambda p, t: p[0] - p[1]*t**(2./3.)
+    # err_funct = lambda p, t, y: fit_funct(p, t) - y
     # Iterate to find t_int
     last_tint = (tau_min+3)
     i = 0
-    p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                  acov[lag_start:lag_end]))
+    # again, don't know which leastsq this intends to use
+    p1, _ = leastsq(err_funct, [.10, .001],  # noqa: F821
+                    args=(lags[lag_start:lag_end],
+                    acov[lag_start:lag_end]))
     tint = calc_tint(p1[0], freq, acov, lags)
     while np.abs(last_tint - tint) > 1.:
         if i >= max_iter:
@@ -408,8 +411,9 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100,
         else:
             i += 1
             last_tint = tint
-        p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                      acov[lag_start:lag_end]))
+        p1, _ = leastsq(err_funct, [.10, .001],  # noqa: F821
+                        args=(lags[lag_start:lag_end],
+                              acov[lag_start:lag_end]))
         tint = calc_tint(p1[0], freq, acov, lags)
     # Find the time where M11(t) = M11(0)/2
     ind = np.min(np.where(acov <= acov[0]/2))
@@ -419,8 +423,9 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100,
     lag_end = int(tau_max / freq)
     if lag_start+1 >= lag_end:
         lag_end = lag_start + 2
-    p1, _ = leastsq(err_funct, [.10, .001], args=(lags[lag_start:lag_end],
-                                                  acov[lag_start:lag_end]))
+    p1, _ = leastsq(err_funct, [.10, .001],  # noqa: F821
+                    args=(lags[lag_start:lag_end],
+                          acov[lag_start:lag_end]))
     if plot:
         new_lags = np.arange(tau_min, tau_max)
         plt.plot(lags, acov, 'k')
@@ -430,6 +435,16 @@ def lenshow_bonin(x, tau_min=1, tint_first_guess=3, freq=1, max_iter=100,
         plt.xlabel("Lag [s]")
         plt.ylabel("$M_{11} [m^2s^{-2}$]")
     return p1[0], np.abs(acov[0] - p1[0]), tau_max
+
+
+def fit_funct(p, t):
+    """ Used in lenshow, lenshow_bonin calculations """
+    p[0] - p[1]*t**(2./3.)
+
+
+def err_funct(p, t, y):
+    """ Used in lenshow, lenshow_bonin calculations """
+    fit_funct(p, t) - y
 
 
 def calc_tint(var, freq, acov, lags):
