@@ -566,8 +566,6 @@ class VADSet:
     def to_ARM_netcdf(self, filepath):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
         str_day_start_time = self.stime[0].strftime('%Y-%m-%d')
-        secs_midnight_time = dt.datetime.strptime(str_day_start_time + ' 00:00:00',
-                                                '%Y-%m-%d %H:%M:%S').timestamp()
         nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
         nc_file.createDimension('time', None)
         # still currently assuming that all files in a VADSet have the same
