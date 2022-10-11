@@ -10,71 +10,77 @@ import matplotlib.pyplot as plt
 import Lidar_functions
 
 
-def xyz(ranges, el, az):
-    """ Calculate x, y, and z coordinates from range, elevation, and azimuth
-    """
-    # [None,:] / [:, None] syntax creates 2d array from 1d range and azimuth
-    x = ranges[None, :]*np.cos(np.radians(el))*np.sin(np.radians(az[:, None]))
-    y = ranges[None, :]*np.cos(np.radians(el))*np.cos(np.radians(az[:, None]))
-    z = ranges*np.sin(np.radians(el))
-    return (x, y, z)
-
-
-def non_nan_idxs(vr, i):
-    """ This variable is used to index azimuths, but I'm not really sure why
-    """
-    return np.where(~np.isnan(vr[:, i]))[0]
-
-
-def calc_A(el, az, idxs):
-    """ Calculate contents of A matrix """
-    A11 = (np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs]))**2)
-    A12 = ((np.cos(np.deg2rad(el))**2) * np.sum(np.sin(np.deg2rad(az[idxs])) *
-                                                np.cos(np.deg2rad(az[idxs]))))
-    A13 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *
-           np.sum(np.sin(np.deg2rad(az[idxs]))))
-    A22 = (np.cos(np.deg2rad(el))**2) * np.sum(np.cos(np.deg2rad(az[idxs]))**2)
-    A23 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el))) *
-           np.sum(np.cos(np.deg2rad(az[idxs]))))
-    A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
-
-    A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
-    return A
-
-
-def nan_if_masked(barray):
-    return [b if not np.ma.is_masked(b) else np.nan for b in barray]
-
-
-def calc_b(el, az, vr, idxs, i):
-    """ Calculate contents of b matrix """
-    # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will be
-    # masked, and the np.array() creation will report a warning about
-    # converting a masked element to nan.  The best way I could figure out to
-    # avoid that warning was to explicitly convert a masked result.
-    b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
-                                         np.sin(np.deg2rad(az[idxs])))
-    b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
-                                         np.cos(np.deg2rad(az[idxs])))
-    b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
-
-    b = np.array(nan_if_masked([b1, b2, b3]))
-    return b
-
-
-def wspd_wdir_from_uv(u, v):
-    # calculate derived products
-    speed = np.sqrt(u**2 + v**2)
-    wdir = 270 - np.rad2deg(np.arctan2(v, u))
-    notnan = ~np.isnan(wdir)
-    wdir[notnan] %= 360
-    return speed, wdir
-
-
 class VAD:
     """
     This is a class created for VAD data
     """
+
+    @staticmethod
+    def xyz(ranges, el, az):
+        """ Calculate x, y, and z coordinates from range, elevation, and azimuth
+        """
+        # [None,:] / [:, None] syntax creates 2d array from 1d range and
+        # azimuth
+        x = (ranges[None, :] * np.cos(np.radians(el))
+             * np.sin(np.radians(az[:, None])))
+        y = (ranges[None, :] * np.cos(np.radians(el))
+             * np.cos(np.radians(az[:, None])))
+        z = ranges * np.sin(np.radians(el))
+        return (x, y, z)
+
+    @staticmethod
+    def non_nan_idxs(vr, i):
+        """ This variable is used to index azimuths, but I'm not really sure why
+        """
+        return np.where(~np.isnan(vr[:, i]))[0]
+
+    @staticmethod
+    def calc_A(el, az, idxs):
+        """ Calculate contents of A matrix """
+        A11 = ((np.cos(np.deg2rad(el))**2)
+               * np.sum(np.sin(np.deg2rad(az[idxs]))**2))
+        A12 = ((np.cos(np.deg2rad(el))**2)
+               * np.sum(np.sin(np.deg2rad(az[idxs]))
+                        * np.cos(np.deg2rad(az[idxs]))))
+        A13 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el)))
+               * np.sum(np.sin(np.deg2rad(az[idxs]))))
+        A22 = ((np.cos(np.deg2rad(el))**2)
+               * np.sum(np.cos(np.deg2rad(az[idxs]))**2))
+        A23 = ((np.cos(np.deg2rad(el))*np.sin(np.deg2rad(el)))
+               * np.sum(np.cos(np.deg2rad(az[idxs]))))
+        A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
+
+        A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
+        return A
+
+    @staticmethod
+    def nan_if_masked(barray):
+        return [b if not np.ma.is_masked(b) else np.nan for b in barray]
+
+    @staticmethod
+    def calc_b(el, az, vr, idxs, i):
+        """ Calculate contents of b matrix """
+        # If all of the vr[idxs, i] array is masked, then b1, b2, and b3 will
+        # be masked, and the np.array() creation will report a warning about
+        # converting a masked element to nan.  The best way I could figure out
+        # to avoid that warning was to explicitly convert a masked result.
+        b1 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
+                                             np.sin(np.deg2rad(az[idxs])))
+        b2 = np.cos(np.deg2rad(el)) * np.sum(vr[idxs, i] *
+                                             np.cos(np.deg2rad(az[idxs])))
+        b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
+
+        b = np.array(VAD.nan_if_masked([b1, b2, b3]))
+        return b
+
+    @staticmethod
+    def wspd_wdir_from_uv(u, v):
+        # calculate derived products
+        speed = np.sqrt(u**2 + v**2)
+        wdir = 270 - np.rad2deg(np.arctan2(v, u))
+        notnan = ~np.isnan(wdir)
+        wdir[notnan] %= 360
+        return speed, wdir
 
     def __init__(self, ppi, u, v, w, speed, wdir, du, dv, dw, z, residual,
                  correlation):
@@ -114,7 +120,7 @@ class VAD:
             ppi.vr[ppi.vr == missing] = np.nan
 
         # calculate XYZ coordinates of data
-        x, y, z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
+        x, y, z = VAD.xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
 
         u = np.ones(len(ppi.ranges))*np.nan
         v = np.ones(len(ppi.ranges))*np.nan
@@ -124,7 +130,7 @@ class VAD:
         dw = np.ones(len(ppi.ranges))*np.nan
 
         for i in range(len(ppi.ranges)):
-            idxs = non_nan_idxs(ppi.vr, i)
+            idxs = VAD.non_nan_idxs(ppi.vr, i)
 
             # need at least 25% of the azimuth radial velocities available
             if len(idxs) <= len(ppi.azimuth)/4:
@@ -133,14 +139,14 @@ class VAD:
                 w[i] = np.nan
                 continue
 
-            A = calc_A(ppi.elevation, ppi.azimuth, idxs)
+            A = VAD.calc_A(ppi.elevation, ppi.azimuth, idxs)
             invA = np.linalg.inv(A)
 
             du[i] = np.sqrt(invA[0, 0])
             dv[i] = np.sqrt(invA[1, 1])
             dw[i] = np.sqrt(invA[2, 2])
 
-            b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
+            b = VAD.calc_b(ppi.elevation, ppi.azimuth, ppi.vr, idxs, i)
             temp = invA.dot(b)
 
             u[i] = temp[0]
@@ -148,7 +154,7 @@ class VAD:
             w[i] = temp[2]
 
         # calculate derived products
-        speed, wdir = wspd_wdir_from_uv(u, v)
+        speed, wdir = VAD.wspd_wdir_from_uv(u, v)
 
         residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)
                            [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2,

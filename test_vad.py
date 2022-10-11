@@ -1,13 +1,10 @@
 import pytest
 import pickle
-import numpy.ma as ma
 import numpy as np
 import numpy.testing
 from pathlib import Path
 
 from ppi import PPI
-import vad
-from vad import xyz, non_nan_idxs, calc_A, calc_b
 from vad import VAD, VADSet
 
 datadir = Path(__file__).parent.joinpath("testdata")
@@ -80,53 +77,57 @@ def derived_products():
 
 def test_xyz(ppi, locations):
     saved_x, saved_y, saved_z = locations
-    x, y, z = xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
+    x, y, z = VAD.xyz(ppi.ranges, ppi.elevation, ppi.azimuth)
     assert_allclose(x, saved_x)
     assert_allclose(y, saved_y)
     assert_allclose(z, saved_z)
 
 
 def test_non_nan_idxs(ppi):
-    idxs = non_nan_idxs(ppi.vr, 0)
+    idxs = VAD.non_nan_idxs(ppi.vr, 0)
     saved_idxs = pickle.load(open(f"{datadir}/vad/foo0.p", "rb"))
     assert_allclose(idxs, saved_idxs)
-    idxs = non_nan_idxs(ppi.vr, 1)
+    idxs = VAD.non_nan_idxs(ppi.vr, 1)
     saved_idxs = pickle.load(open(f"{datadir}/vad/foo1.p", "rb"))
     assert_allclose(idxs, saved_idxs)
-    idxs = non_nan_idxs(ppi.vr, 2)
+    idxs = VAD.non_nan_idxs(ppi.vr, 2)
     saved_idxs = pickle.load(open(f"{datadir}/vad/foo2.p", "rb"))
     assert_allclose(idxs, saved_idxs)
-    idxs = non_nan_idxs(ppi.vr, 3)
+    idxs = VAD.non_nan_idxs(ppi.vr, 3)
     saved_idxs = pickle.load(open(f"{datadir}/vad/foo3.p", "rb"))
     assert_allclose(idxs, saved_idxs)
 
 
 def test_calc_A(ppi):
-    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 0))
+    A = VAD.calc_A(ppi.elevation, ppi.azimuth, VAD.non_nan_idxs(ppi.vr, 0))
     saved_A = pickle.load(open(f"{datadir}/vad/A_0.p", "rb"))
     assert_allclose(A, saved_A)
-    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 1))
+    A = VAD.calc_A(ppi.elevation, ppi.azimuth, VAD.non_nan_idxs(ppi.vr, 1))
     saved_A = pickle.load(open(f"{datadir}/vad/A_1.p", "rb"))
     assert_allclose(A, saved_A)
-    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 2))
+    A = VAD.calc_A(ppi.elevation, ppi.azimuth, VAD.non_nan_idxs(ppi.vr, 2))
     saved_A = pickle.load(open(f"{datadir}/vad/A_2.p", "rb"))
     assert_allclose(A, saved_A)
-    A = calc_A(ppi.elevation, ppi.azimuth, non_nan_idxs(ppi.vr, 3))
+    A = VAD.calc_A(ppi.elevation, ppi.azimuth, VAD.non_nan_idxs(ppi.vr, 3))
     saved_A = pickle.load(open(f"{datadir}/vad/A_3.p", "rb"))
     assert_allclose(A, saved_A)
 
 
 def test_calc_b(ppi):
-    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 0), 0)
+    b = VAD.calc_b(ppi.elevation, ppi.azimuth, ppi.vr,
+                   VAD.non_nan_idxs(ppi.vr, 0), 0)
     saved_b = pickle.load(open(f"{datadir}/vad/b_0.p", "rb"))
     assert_allclose(b, saved_b)
-    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 1), 1)
+    b = VAD.calc_b(ppi.elevation, ppi.azimuth, ppi.vr,
+                   VAD.non_nan_idxs(ppi.vr, 1), 1)
     saved_b = pickle.load(open(f"{datadir}/vad/b_1.p", "rb"))
     assert_allclose(b, saved_b)
-    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 2), 2)
+    b = VAD.calc_b(ppi.elevation, ppi.azimuth, ppi.vr,
+                   VAD.non_nan_idxs(ppi.vr, 2), 2)
     saved_b = pickle.load(open(f"{datadir}/vad/b_2.p", "rb"))
     assert_allclose(b, saved_b)
-    b = calc_b(ppi.elevation, ppi.azimuth, ppi.vr, non_nan_idxs(ppi.vr, 3), 3)
+    b = VAD.calc_b(ppi.elevation, ppi.azimuth, ppi.vr,
+                   VAD.non_nan_idxs(ppi.vr, 3), 3)
     saved_b = pickle.load(open(f"{datadir}/vad/b_3.p", "rb"))
     assert_allclose(b, saved_b)
 
@@ -206,6 +207,6 @@ def test_wind_from_uv():
     v = np.array([np.NINF, np.NZERO, 0, 0, -1, -2, 2], dtype=float)
     xspd = np.array([np.inf, 0, 0, 1, 1, np.sqrt(8), np.nan], dtype=float)
     xdir = np.array([0, 90, 270, 270, 0, 45, np.nan], dtype=float)
-    wspd, wdir = vad.wspd_wdir_from_uv(u, v)
+    wspd, wdir = VAD.wspd_wdir_from_uv(u, v)
     assert_allclose(wspd, xspd, equal_nan=True)
     assert_allclose(wdir, xdir, equal_nan=True)
