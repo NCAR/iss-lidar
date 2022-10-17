@@ -210,3 +210,17 @@ def test_wind_from_uv():
     wspd, wdir = VAD.wspd_wdir_from_uv(u, v)
     assert_allclose(wspd, xspd, equal_nan=True)
     assert_allclose(wdir, xdir, equal_nan=True)
+
+
+def test_vadset_from_PPIs(ppis):
+    """ Test that vadset from_PPIs function produces the same result as
+    calculating VADs individually and then creating VADSet from them """
+    vads = []
+    for p in ppis:
+        vads.append(VAD.calculate_ARM_VAD(p))
+    fromVADs = VADSet.from_VADs(vads, -22)
+    files = [f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc",
+             f"{datadir}/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc",
+             f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc"]
+    fromPPIs = VADSet.from_PPIs(files, -22)
+    assert fromVADs == fromPPIs

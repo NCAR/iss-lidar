@@ -545,6 +545,56 @@ class VADSet:
                    np.array(f.variables['residual'][:]),
                    np.array(f.variables['correlation'][:]))
 
+    @classmethod
+    def from_PPIs(cls, ppi_files: List[PPI], min_cnr: int):
+        """ Create a VADSet object by performing VAD calculation on each of a
+        list of PPI files """
+        vads = []
+        for f in ppi_files:
+            ppi = PPI.fromFile(f)
+
+            # for low elevation angles, VAD output isn't very helpful
+            if ppi.elevation < 6:
+                continue
+            ppi.threshold_cnr(min_cnr)
+
+            # generate VAD for this timestep
+            vad = VAD.calculate_ARM_VAD(ppi)
+            vads.append(vad)
+
+        if not vads:
+            # didn't successfully create any vads. can't continue processing.
+            return
+
+        return cls.from_VADs(vads, min_cnr)
+
+    def __eq__(self, other):
+        # for testing.
+        print("using custom equals")
+        if (np.array_equal(self.mean_cnr, other.mean_cnr)
+            and np.array_equal(self.min_cnr, other.min_cnr)
+            and np.array_equal(self.alt, other.alt, equal_nan=True)
+            and np.array_equal(self.lat, other.lat, equal_nan=True)
+            and np.array_equal(self.lon, other.lon, equal_nan=True)
+            and np.array_equal(self.height, other.height, equal_nan=True)
+            and np.array_equal(self.stime, other.stime)
+            and np.array_equal(self.etime, other.etime)
+            and np.array_equal(self.el, other.el, equal_nan=True)
+            and np.array_equal(self.nbeams, other.nbeams, equal_nan=True)
+            and np.array_equal(self.u, other.u, equal_nan=True)
+            and np.array_equal(self.v, other.v, equal_nan=True)
+            and np.array_equal(self.w, other.w, equal_nan=True)
+            and np.array_equal(self.du, other.du, equal_nan=True)
+            and np.array_equal(self.dv, other.dv, equal_nan=True)
+            and np.array_equal(self.dw, other.dw, equal_nan=True)
+            and np.array_equal(self.speed, other.speed, equal_nan=True)
+            and np.array_equal(self.wdir, other.wdir, equal_nan=True)
+            and np.array_equal(self.residual, other.residual, equal_nan=True)
+            and np.array_equal(self.correlation, other.correlation,
+                               equal_nan=True)):
+            return True
+        return False
+
     def consensus_average(self, ranges: list) -> Tuple[np.ndarray, np.ndarray,
                                                        np.ndarray]:
         """ Return consensus averaged u,v,w for 30-min increments starting at
