@@ -14,13 +14,13 @@ import argparse
 import numpy as np
 from datetime import datetime
 from vad import VADSet
-from tools import createFilename
+from tools import create_filename
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
 
 
-def createParser():
+def create_parser():
     parser = argparse.ArgumentParser(description="Generate netCDF of VAD winds"
                                      " from PPI scans")
     parser.add_argument("--min_cnr", default=-22, type=float, help="threshold"
@@ -30,24 +30,24 @@ def createParser():
     return parser.parse_args()
 
 
-def selectFiles(path: str):
+def select_files(path: str):
     # expand glob expression if it didn't get expanded in the shell
     ppi_files = glob.glob(path)
     return sorted(list(ppi_files))
 
 
 def save(vadset: VADSet, destdir: str, prefix: str = None):
-    final_file_path = createFilename(vadset.stime[0], destdir, prefix)
+    final_file_path = create_filename(vadset.stime[0], destdir, prefix)
     vadset.to_ARM_netcdf(final_file_path)
 
 
 def main():
-    args = createParser()
+    args = create_parser()
     # try to allow either list of files created by shell glob or expression to
     # pass to python glob
     ppi_scans = args.ppifiles
     if len(args.ppifiles) == 1:
-        ppi_scans = selectFiles(args.ppifiles[0])
+        ppi_scans = select_files(args.ppifiles[0])
     vadset = VADSet.from_PPIs(ppi_scans, args.min_cnr)
     save(vadset, args.destdir)
 

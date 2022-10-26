@@ -20,7 +20,7 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
 @pytest.fixture
 def ppi():
     """ Read in PPI file """
-    ppi = PPI.fromFile(
+    ppi = PPI.from_file(
         f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     # use default threshold val in ppi_scans_to_vad of -22
     ppi.threshold_cnr(-22)
@@ -30,13 +30,13 @@ def ppi():
 @pytest.fixture
 def ppis():
     """ Read in 3 PPI scans """
-    a = PPI.fromFile(
+    a = PPI.from_file(
         f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc")
     a.threshold_cnr(-22)
-    b = PPI.fromFile(
+    b = PPI.from_file(
         f"{datadir}/cfrad.20210630_171644_WLS200s-181_133_PPI_50m.nc")
     b.threshold_cnr(-22)
-    c = PPI.fromFile(
+    c = PPI.from_file(
         f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc")
     c.threshold_cnr(-22)
     return(a, b, c)

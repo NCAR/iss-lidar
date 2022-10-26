@@ -20,13 +20,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 from typing import List
 from vad import VADSet
-from tools import createFilename
+from tools import create_filename
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
 
 
-def parseArgs():
+def parse_args():
     parser = argparse.ArgumentParser(description="Generate consensus averaged"
                                      "netcdfs from VAD files")
     parser.add_argument("vadfile", help="daily VAD file")
@@ -74,7 +74,7 @@ def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
                  prefix: str = None):
     # create netCDF file
     # create dir if doesn't exist yet
-    filepath = createFilename(ranges[0], final_path, prefix)
+    filepath = create_filename(ranges[0], final_path, prefix)
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
     nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
@@ -113,7 +113,7 @@ def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
 
 
 def main():
-    args = parseArgs()
+    args = parse_args()
     vadset = VADSet.from_file(args.vadfile)
 
     ranges = create_time_ranges(vadset.stime[0].date())

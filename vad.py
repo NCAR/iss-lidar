@@ -551,7 +551,7 @@ class VADSet:
         list of PPI files """
         vads = []
         for f in ppi_files:
-            ppi = PPI.fromFile(f)
+            ppi = PPI.from_file(f)
 
             # for low elevation angles, VAD output isn't very helpful
             if ppi.elevation < 6:

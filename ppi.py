@@ -28,7 +28,7 @@ class PPI:
         self.alt = alt
 
     @classmethod
-    def fromFile(cls, filename: str):
+    def from_file(cls, filename: str):
         """ Create PPI object by reading cfradial scan file """
         [cnr, ranges, vr, elevation, azimuth, starttime, endtime, lat, lon,
          alt] = Lidar_functions.read_cfradial(filename)
