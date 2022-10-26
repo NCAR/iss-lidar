@@ -8,14 +8,13 @@ Carol Costanza
 Output VAD winds into ARM netCDF format from cfradial format
 Program works for either 1 cfradial file or multiple within 1 day
 """
-import os
 import warnings
 import glob
 import argparse
 import numpy as np
-from vad import VAD, VADSet
-from ppi import PPI
-from typing import List
+from datetime import datetime
+from vad import VADSet
+from tools import createFilename
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
@@ -37,36 +36,8 @@ def selectFiles(path: str):
     return sorted(list(ppi_files))
 
 
-def process(ppi_files: List[str], min_cnr: int):
-    vads = []
-
-    for f in ppi_files:
-        ppi = PPI.fromFile(f)
-
-        # for low elevation angles, VAD output isn't very helpful
-        if ppi.elevation < 6:
-            continue
-        ppi.threshold_cnr(min_cnr)
-
-        # generate VAD for this timestep
-        vad = VAD.calculate_ARM_VAD(ppi)
-        vads.append(vad)
-
-    if not vads:
-        # didn't successfully create any vads. can't continue processing.
-        return
-
-    vadset = VADSet.from_VADs(vads, min_cnr)
-    return vadset
-
-
 def save(vadset: VADSet, destdir: str, prefix: str = None):
-    filename_time = vadset.stime[0].strftime('%Y%m%d')
-    final_file_name = 'VAD_'
-    if prefix:
-        final_file_name += prefix + '_'
-    final_file_name += filename_time + '.nc'
-    final_file_path = os.path.join(destdir, final_file_name)
+    final_file_path = createFilename(vadset.stime[0], destdir, prefix)
     vadset.to_ARM_netcdf(final_file_path)
 
 
@@ -77,7 +48,7 @@ def main():
     ppi_scans = args.ppifiles
     if len(args.ppifiles) == 1:
         ppi_scans = selectFiles(args.ppifiles[0])
-    vadset = process(ppi_scans, args.min_cnr)
+    vadset = VADSet.from_PPIs(ppi_scans, args.min_cnr)
     save(vadset, args.destdir)
 
 

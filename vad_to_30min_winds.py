@@ -18,8 +18,9 @@ import warnings
 import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from vad import VADSet
 from typing import List
+from vad import VADSet
+from tools import createFilename
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
@@ -72,12 +73,8 @@ def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
                  u_mean: np.ndarray, v_mean: np.ndarray, w_mean: np.ndarray,
                  prefix: str = None):
     # create netCDF file
-    filepath = "30min_winds_"
-    if prefix:
-        filepath += prefix + "_"
-    filepath += ranges[0].strftime("%Y%m%d") + ".nc"
-    filepath = os.path.join(final_path, filepath)
     # create dir if doesn't exist yet
+    filepath = createFilename(ranges[0], final_path, prefix)
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
     nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
@@ -138,3 +135,4 @@ def test_create_time_ranges():
     assert len(res) == 48
     assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, pytz.UTC)
     assert res[-1] == dt.datetime(2021, 6, 30, 23, 30, 00, 00, pytz.UTC)
+
