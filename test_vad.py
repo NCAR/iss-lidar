@@ -233,18 +233,14 @@ def test_vadset_from_PPIs(ppis):
     assert fromVADs == fromPPIs
 
 
-#     def create_ARM_nc(self, mean_cnr: np.ndarray, max_cnr: float,
-#                      altitude: float, latitude: float, longitude: float,
-#                      stime: list, etime: list, file_path: str):
-
 def test_vad_vs_vadset(ppi):
     # try to see if i get the same netcdf from a single VAD as I get from a
     # VADSet with one VAD in it
     single = VAD.calculate_ARM_VAD(ppi)
     single.to_ARM_nc(f"{datadir}/test_single_vad.nc")
-    set = VADSet.from_PPIs([f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc"], -22)
+    set = VADSet.from_PPIs(
+        [f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc"], -22)
     set.to_ARM_netcdf(f"{datadir}/test_single_vadset.nc")
     a = VADSet.from_file(f"{datadir}/test_single_vad.nc")
     b = VADSet.from_file(f"{datadir}/test_single_vadset.nc")
     compare_vadsets(a, b)
-
