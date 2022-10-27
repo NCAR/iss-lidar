@@ -17,6 +17,53 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
                                   equal_nan, err_msg, verbose)
 
 
+def compare_vadsets(a: VADSet, b: VADSet):
+    """ Compare data from two VADSet objects, allowing for small differences
+    from saving/reading files, etc"""
+    assert a.min_cnr == b.min_cnr
+    assert isinstance(b.min_cnr, int)
+    assert_allclose(a.alt, b.alt, equal_nan=True)
+    assert isinstance(b.alt, numpy.ma.MaskedArray)
+    # differences of like 6e-7 in these vals
+    assert a.lat == pytest.approx(b.lat)
+    assert isinstance(b.lat, numpy.ma.MaskedArray)
+    assert a.lon == pytest.approx(b.lon)
+    assert isinstance(b.lon, numpy.ma.MaskedArray)
+    assert_allclose(a.height, b.height)
+    assert isinstance(b.height, numpy.ma.MaskedArray)
+    assert_allclose(a.mean_cnr, b.mean_cnr)
+    assert isinstance(b.mean_cnr, numpy.ndarray)
+    assert a.stime == b.stime
+    assert isinstance(b.stime, list)
+    assert a.etime == b.etime
+    assert isinstance(b.etime, list)
+    assert a.el == b.el
+    assert isinstance(b.el, list)
+    assert a.nbeams == b.nbeams
+    assert isinstance(b.nbeams, list)
+    assert_allclose(a.u, b.u, equal_nan=True)
+    assert isinstance(b.u, numpy.ndarray)
+    assert_allclose(a.du, b.du, equal_nan=True)
+    assert isinstance(b.du, numpy.ndarray)
+    assert_allclose(a.w, b.w, equal_nan=True)
+    assert isinstance(b.w, numpy.ndarray)
+    assert_allclose(a.dw, b.dw, equal_nan=True)
+    assert isinstance(b.dw, numpy.ndarray)
+    assert_allclose(a.v, b.v, equal_nan=True)
+    assert isinstance(b.v, numpy.ndarray)
+    assert_allclose(a.dv, b.dv, equal_nan=True)
+    assert isinstance(b.dv, numpy.ndarray)
+    assert_allclose(a.speed, b.speed, equal_nan=True)
+    assert isinstance(b.speed, numpy.ndarray)
+    assert_allclose(a.wdir, b.wdir, equal_nan=True)
+    assert isinstance(b.wdir, numpy.ndarray)
+    assert_allclose(a.residual, b.residual, equal_nan=True)
+    assert isinstance(b.residual, numpy.ndarray)
+    assert_allclose(a.correlation, b.correlation, equal_nan=True)
+    assert isinstance(b.correlation, numpy.ndarray)
+
+
+
 @pytest.fixture
 def ppi():
     """ Read in PPI file """
@@ -159,47 +206,7 @@ def test_vadset_netcdf(ppis):
     vs.to_ARM_netcdf(f"{datadir}/test_vadset.nc")
     f = VADSet.from_file(f"{datadir}/test_vadset.nc")
     # vadset from file should match original vadset
-    assert vs.min_cnr == f.min_cnr
-    assert isinstance(f.min_cnr, int)
-    assert_allclose(vs.alt, f.alt, equal_nan=True)
-    assert isinstance(f.alt, numpy.ma.MaskedArray)
-    # differences of like 6e-7 in these vals
-    assert vs.lat == pytest.approx(f.lat)
-    assert isinstance(f.lat, numpy.ma.MaskedArray)
-    assert vs.lon == pytest.approx(f.lon)
-    assert isinstance(f.lon, numpy.ma.MaskedArray)
-    assert_allclose(vs.height, f.height)
-    assert isinstance(f.height, numpy.ma.MaskedArray)
-    assert_allclose(vs.mean_cnr, f.mean_cnr)
-    assert isinstance(f.mean_cnr, numpy.ndarray)
-    assert vs.stime == f.stime
-    assert isinstance(f.stime, list)
-    assert vs.etime == f.etime
-    assert isinstance(f.etime, list)
-    assert vs.el == f.el
-    assert isinstance(f.el, list)
-    assert vs.nbeams == f.nbeams
-    assert isinstance(f.nbeams, list)
-    assert_allclose(vs.u, f.u, equal_nan=True)
-    assert isinstance(f.u, numpy.ndarray)
-    assert_allclose(vs.du, f.du, equal_nan=True)
-    assert isinstance(f.du, numpy.ndarray)
-    assert_allclose(vs.w, f.w, equal_nan=True)
-    assert isinstance(f.w, numpy.ndarray)
-    assert_allclose(vs.dw, f.dw, equal_nan=True)
-    assert isinstance(f.dw, numpy.ndarray)
-    assert_allclose(vs.v, f.v, equal_nan=True)
-    assert isinstance(f.v, numpy.ndarray)
-    assert_allclose(vs.dv, f.dv, equal_nan=True)
-    assert isinstance(f.dv, numpy.ndarray)
-    assert_allclose(vs.speed, f.speed, equal_nan=True)
-    assert isinstance(f.speed, numpy.ndarray)
-    assert_allclose(vs.wdir, f.wdir, equal_nan=True)
-    assert isinstance(f.wdir, numpy.ndarray)
-    assert_allclose(vs.residual, f.residual, equal_nan=True)
-    assert isinstance(f.residual, numpy.ndarray)
-    assert_allclose(vs.correlation, f.correlation, equal_nan=True)
-    assert isinstance(f.correlation, numpy.ndarray)
+    compare_vadsets(vs, f)
 
 
 def test_wind_from_uv():
@@ -224,3 +231,20 @@ def test_vadset_from_PPIs(ppis):
              f"{datadir}/cfrad.20210630_174238_WLS200s-181_133_PPI_50m.nc"]
     fromPPIs = VADSet.from_PPIs(files, -22)
     assert fromVADs == fromPPIs
+
+
+#     def create_ARM_nc(self, mean_cnr: np.ndarray, max_cnr: float,
+#                      altitude: float, latitude: float, longitude: float,
+#                      stime: list, etime: list, file_path: str):
+
+def test_vad_vs_vadset(ppi):
+    # try to see if i get the same netcdf from a single VAD as I get from a
+    # VADSet with one VAD in it
+    single = VAD.calculate_ARM_VAD(ppi)
+    single.to_ARM_nc(f"{datadir}/test_single_vad.nc")
+    set = VADSet.from_PPIs([f"{datadir}/cfrad.20210630_152022_WLS200s-181_133_PPI_50m.nc"], -22)
+    set.to_ARM_netcdf(f"{datadir}/test_single_vadset.nc")
+    a = VADSet.from_file(f"{datadir}/test_single_vad.nc")
+    b = VADSet.from_file(f"{datadir}/test_single_vadset.nc")
+    compare_vadsets(a, b)
+
