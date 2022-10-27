@@ -2,8 +2,8 @@
 
 import numpy as np
 import numpy.ma as ma
-import Lidar_functions
 from datetime import datetime
+from tools import read_cfradial
 
 
 class PPI:
@@ -31,7 +31,7 @@ class PPI:
     def from_file(cls, filename: str):
         """ Create PPI object by reading cfradial scan file """
         [cnr, ranges, vr, elevation, azimuth, starttime, endtime, lat, lon,
-         alt] = Lidar_functions.read_cfradial(filename)
+         alt] = read_cfradial(filename)
         return cls(cnr, ranges, vr, elevation, azimuth, starttime, endtime,
                    lat, lon, alt)
 
