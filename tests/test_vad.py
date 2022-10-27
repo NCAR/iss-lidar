@@ -7,7 +7,7 @@ from pathlib import Path
 from ppi import PPI
 from vad import VAD, VADSet
 
-datadir = Path(__file__).parent.joinpath("testdata")
+datadir = Path(__file__).parent.parent.joinpath("testdata")
 
 
 def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
