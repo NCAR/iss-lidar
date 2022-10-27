@@ -42,12 +42,3 @@ class PPI:
     def mean_cnr(self) -> np.ndarray:
         """ Return mean value of CNR """
         return np.nanmean(self.cnr, axis=0)
-
-
-def test_threshold_cnr():
-    vel = ma.arange(1, 20)
-    ppi = PPI(cnr=ma.arange(-29, -10), vr=vel)
-    ppi.threshold_cnr(-22)
-    vel = ma.masked_array(vel, [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0])
-    assert ma.allequal(vel, ppi.vr)
