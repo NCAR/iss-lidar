@@ -12,7 +12,6 @@ import warnings
 import glob
 import argparse
 import numpy as np
-from datetime import datetime
 from vad import VADSet
 from tools import create_filename
 
