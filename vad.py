@@ -434,7 +434,6 @@ class VADSet:
 
     def __eq__(self, other):
         # for testing.
-        print("using custom equals")
         if (np.array_equal(self.mean_cnr, other.mean_cnr)
             and np.array_equal(self.min_cnr, other.min_cnr)
             and np.array_equal(self.alt, other.alt, equal_nan=True)
