@@ -92,8 +92,8 @@ class VAD:
 
     def __init__(self, ppi: PPI, u: np.ndarray, v: np.ndarray, w: np.ndarray,
                  speed: np.ndarray, wdir: np.ndarray, du: np.ndarray,
-                 dv: np.ndarray, dw: np.ndarray, z: np.ndarray,
-                 residual: np.ndarray, correlation: np.ndarray):
+                 dv: np.ndarray, dw: np.ndarray, nbeams_used: np.ndarray,
+                  z: np.ndarray, residual: np.ndarray, correlation: np.ndarray):
         self.u = np.array(u)
         self.v = np.array(v)
         self.w = np.array(w)
@@ -102,6 +102,7 @@ class VAD:
         self.du = np.array(du)
         self.dv = np.array(dv)
         self.dw = np.array(dw)
+        self.nbeams_used = np.array(nbeams_used)
         self.z = z
         self.residual = np.array(residual)
         self.correlation = np.array(correlation)
@@ -138,11 +139,15 @@ class VAD:
         du = np.ones(len(ppi.ranges))*np.nan
         dv = np.ones(len(ppi.ranges))*np.nan
         dw = np.ones(len(ppi.ranges))*np.nan
+        nbeams_used = np.ones(len(ppi.ranges))*np.nan
 
         for i in range(len(ppi.ranges)):
             idxs = VAD.non_nan_idxs(ppi.vr, i)
+            nbeams_used[i] = len(idxs)
 
             # need at least 25% of the azimuth radial velocities available
+            print(ppi.azimuth)
+            print(idxs)
             if len(idxs) <= len(ppi.azimuth)/4:
                 u[i] = np.nan
                 v[i] = np.nan
@@ -178,7 +183,7 @@ class VAD:
                        (np.sqrt(np.nanmean((u_dot_r-mean_u_dot_r)**2, axis=0))
                         * np.sqrt(np.nanmean((ppi.vr-mean_vr)**2, axis=0))))
 
-        return cls(ppi, u, v, w, speed, wdir, du, dv, dw,
+        return cls(ppi, u, v, w, speed, wdir, du, dv, dw, nbeams_used,
                    z, residual, correlation)
 
     def plot_(self, filename: str, plot_time: int = None, title: str = None):
@@ -319,8 +324,9 @@ class VADSet:
                  stime: list, etime: list, el: list, nbeams: list,
                  u: np.ndarray, du: np.ndarray, v: np.ndarray,
                  dv: np.ndarray, w: np.ndarray, dw: np.ndarray,
-                 speed: np.ndarray, wdir: np.ndarray,
-                 residual: np.ndarray, correlation: np.ndarray):
+                 nbeams_used: np.ndarray,speed: np.ndarray,
+                 wdir: np.ndarray,residual: np.ndarray,
+                 correlation: np.ndarray):
         self.mean_cnr = mean_cnr
         self.min_cnr = min_cnr
         self.alt = alt
@@ -337,6 +343,7 @@ class VADSet:
         self.du = du
         self.dv = dv
         self.dw = dw
+        self.nbeams_used = nbeams_used
         self.speed = speed
         self.wdir = wdir
         self.residual = residual
@@ -365,6 +372,7 @@ class VADSet:
                    np.array([i.dv for i in vads]),
                    np.array([i.w for i in vads]),
                    np.array([i.dw for i in vads]),
+                   np.array([i.nbeams_used for i in vads]),
                    np.array([i.speed for i in vads]),
                    np.array([i.wdir for i in vads]),
                    np.array([i.residual for i in vads]),
@@ -404,6 +412,7 @@ class VADSet:
                    np.array(f.variables['v_error'][:]),
                    np.array(f.variables['w'][:]),
                    np.array(f.variables['w_error'][:]),
+                   np.array(f.variables['nbeans_used'][:]),
                    np.array(f.variables['wind_speed'][:]),
                    np.array(f.variables['wind_direction'][:]),
                    np.array(f.variables['residual'][:]),
@@ -450,6 +459,7 @@ class VADSet:
             and np.array_equal(self.du, other.du, equal_nan=True)
             and np.array_equal(self.dv, other.dv, equal_nan=True)
             and np.array_equal(self.dw, other.dw, equal_nan=True)
+            and np.array_equal(self.nbeams_used, other.nbeams_used, equal_nan=True)
             and np.array_equal(self.speed, other.speed, equal_nan=True)
             and np.array_equal(self.wdir, other.wdir, equal_nan=True)
             and np.array_equal(self.residual, other.residual, equal_nan=True)
@@ -542,9 +552,13 @@ class VADSet:
         elevation_angle.units = 'degree'
         nbeams = nc_file.createVariable('nbeams', 'i', 'time')
         nbeams[:] = self.nbeams
-        nbeams.long_name = ('Number of beams (azimuth angles) used in wind'
-                            ' vector estimations')
+        nbeams.long_name = ('Number of beams (azimuth angles) in each PPI')
         nbeams.units = 'unitless'
+        nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time','height'))
+        nbeams_used[:, :] = self.nbeams_used
+        nbeams_used.long_name = ('Number of beams (azimuth angles) used in wind'
+                            ' vector estimations')
+        nbeams_used.units = 'unitless'
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u[:, :] = self.u
         u.long_name = 'Eastward component of wind vector'
