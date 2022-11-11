@@ -36,7 +36,7 @@ def select_files(path: str):
 
 
 def save(vadset: VADSet, destdir: str, prefix: str = None):
-    final_file_path = create_filename(vadset.stime[0], destdir, prefix)
+    final_file_path = create_filename(vadset.stime[0], destdir, "VAD", prefix)
     vadset.to_ARM_netcdf(final_file_path)
 
 

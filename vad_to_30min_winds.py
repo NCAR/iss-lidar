@@ -74,7 +74,7 @@ def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
                  prefix: str = None):
     # create netCDF file
     # create dir if doesn't exist yet
-    filepath = create_filename(ranges[0], final_path, prefix)
+    filepath = create_filename(ranges[0], final_path, "30min_winds", prefix)
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
     nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
