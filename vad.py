@@ -146,8 +146,6 @@ class VAD:
             nbeams_used[i] = len(idxs)
 
             # need at least 25% of the azimuth radial velocities available
-            print(ppi.azimuth)
-            print(idxs)
             if len(idxs) <= len(ppi.azimuth)/4:
                 u[i] = np.nan
                 v[i] = np.nan
@@ -412,7 +410,7 @@ class VADSet:
                    np.array(f.variables['v_error'][:]),
                    np.array(f.variables['w'][:]),
                    np.array(f.variables['w_error'][:]),
-                   np.array(f.variables['nbeans_used'][:]),
+                   np.array(f.variables['nbeams_used'][:]),
                    np.array(f.variables['wind_speed'][:]),
                    np.array(f.variables['wind_direction'][:]),
                    np.array(f.variables['residual'][:]),
