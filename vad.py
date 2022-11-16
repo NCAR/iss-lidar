@@ -37,7 +37,7 @@ class VAD:
     def non_nan_idxs(vr: np.ma.MaskedArray, i: int) -> np.ma.MaskedArray:
         """ This variable is used to index azimuths, but I'm not really sure why
         """
-        return np.where(~np.isnan(vr[:, i]))[0]
+        return np.argwhere(~np.isnan(vr[:, i])).flatten()
 
     @staticmethod
     def calc_A(el: np.ma.MaskedArray, az: np.ma.MaskedArray,
@@ -146,10 +146,7 @@ class VAD:
             nbeams_used[i] = len(idxs)
 
             # need at least 25% of the azimuth radial velocities available
-            if len(idxs) <= len(ppi.azimuth)/4:
-                u[i] = np.nan
-                v[i] = np.nan
-                w[i] = np.nan
+            if nbeams_used[i] <= len(ppi.azimuth)/4 or np.isnan(nbeams_used[i]):
                 continue
 
             A = VAD.calc_A(ppi.elevation, ppi.azimuth, idxs)
