@@ -177,19 +177,17 @@ def test_calc_b(ppi):
 
 def test_arm_vad(ppi, final_vad_winds, final_vad_errs, derived_products):
     vad = VAD.calculate_ARM_VAD(ppi)
-    """saved_u, saved_v, saved_w = final_vad_winds
+    saved_u, saved_v, saved_w = final_vad_winds
     assert_allclose(vad.u, saved_u, equal_nan=True)
     assert_allclose(vad.v, saved_v, equal_nan=True)
     assert_allclose(vad.w, saved_w, equal_nan=True)
     saved_du, saved_dv, saved_dw = final_vad_errs
     assert_allclose(vad.du, saved_du, equal_nan=True)
     assert_allclose(vad.dv, saved_dv, equal_nan=True)
-    assert_allclose(vad.dw, saved_dw, equal_nan=True)"""
+    assert_allclose(vad.dw, saved_dw, equal_nan=True)
     saved_wspd, saved_wdir, saved_res, saved_cor = derived_products
-    """assert_allclose(vad.speed, saved_wspd, equal_nan=True)
-    assert_allclose(vad.wdir, saved_wdir, equal_nan=True)"""
-    print("calculated:", type(vad.residual), vad.residual)
-    print("saved:", type(saved_res), saved_res)
+    assert_allclose(vad.speed, saved_wspd, equal_nan=True)
+    assert_allclose(vad.wdir, saved_wdir, equal_nan=True)
     assert_allclose(vad.residual, saved_res, equal_nan=True)
     assert_allclose(vad.correlation, saved_cor, equal_nan=True)
 
