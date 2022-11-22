@@ -240,3 +240,10 @@ def test_vad_vs_vadset(ppi):
     a = VADSet.from_file(f"{datadir}/test_single_vad.nc")
     b = VADSet.from_file(f"{datadir}/test_single_vadset.nc")
     compare_vadsets(a, b)
+
+
+# updating tests example:
+# d = {"du": vad.du.tolist(), "dv": vad.dv.tolist(), "dw": vad.dw.tolist()}
+# f = open("testdata/vad/wind_errors.json", "w")
+# json.dump(d, f)
+# f.close()
