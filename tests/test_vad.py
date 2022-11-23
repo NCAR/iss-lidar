@@ -1,7 +1,6 @@
 import pytest
 import json
 import numpy as np
-import numpy.ma as ma
 import numpy.testing
 from pathlib import Path
 
