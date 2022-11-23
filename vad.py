@@ -4,6 +4,7 @@ import os
 import datetime as dt
 import pytz
 import numpy as np
+import numpy.ma as ma
 import netCDF4
 import matplotlib.pyplot as plt
 from typing import Tuple, List
@@ -93,19 +94,19 @@ class VAD:
     def __init__(self, ppi: PPI, u: np.ndarray, v: np.ndarray, w: np.ndarray,
                  speed: np.ndarray, wdir: np.ndarray, du: np.ndarray,
                  dv: np.ndarray, dw: np.ndarray, nbeams_used: np.ndarray,
-                  z: np.ndarray, residual: np.ndarray, correlation: np.ndarray):
-        self.u = np.array(u)
-        self.v = np.array(v)
-        self.w = np.array(w)
-        self.speed = np.array(speed)
-        self.wdir = np.array(wdir)
-        self.du = np.array(du)
-        self.dv = np.array(dv)
-        self.dw = np.array(dw)
-        self.nbeams_used = np.array(nbeams_used)
-        self.z = z
-        self.residual = np.array(residual)
-        self.correlation = np.array(correlation)
+                 z: np.ndarray, residual: np.ndarray, correlation: np.ndarray):
+        self.u = ma.masked_invalid(u)
+        self.v = ma.masked_invalid(v)
+        self.w = ma.masked_invalid(w)
+        self.speed = ma.masked_invalid(speed)
+        self.wdir = ma.masked_invalid(wdir)
+        self.du = ma.masked_invalid(du)
+        self.dv = ma.masked_invalid(dv)
+        self.dw = ma.masked_invalid(dw)
+        self.nbeams_used = ma.masked_invalid(nbeams_used)
+        self.z = ma.masked_invalid(z)
+        self.residual = ma.masked_invalid(residual)
+        self.correlation = ma.masked_invalid(correlation)
         self.stime = ppi.starttime
         self.etime = ppi.endtime
         self.el = ppi.elevation
@@ -313,14 +314,22 @@ class VAD:
 class VADSet:
     """ Class to hold data from a series of VAD calculations """
 
+    @staticmethod
+    def missing_val_if_nan(val: float, missing_val: float = -9999.0) -> float:
+        """ netCDF4 library automatically sets nans to missing in writing to
+        array variables, but not scalars. """
+        if val is None or np.isnan(val):
+            return missing_val
+        return val
+
     def __init__(self, mean_cnr: np.ndarray, min_cnr: int,
                  alt: np.ma.MaskedArray, lat: np.ma.MaskedArray,
                  lon: np.ma.MaskedArray, height: np.ma.MaskedArray,
                  stime: list, etime: list, el: list, nbeams: list,
                  u: np.ndarray, du: np.ndarray, v: np.ndarray,
                  dv: np.ndarray, w: np.ndarray, dw: np.ndarray,
-                 nbeams_used: np.ndarray,speed: np.ndarray,
-                 wdir: np.ndarray,residual: np.ndarray,
+                 nbeams_used: np.ndarray, speed: np.ndarray,
+                 wdir: np.ndarray, residual: np.ndarray,
                  correlation: np.ndarray):
         self.mean_cnr = mean_cnr
         self.min_cnr = min_cnr
@@ -346,7 +355,7 @@ class VADSet:
 
     @classmethod
     def from_VADs(cls, vads: List[VAD], min_cnr: int):
-        return cls(np.array([i.mean_cnr for i in vads]),
+        return cls(ma.array([i.mean_cnr for i in vads]),
                    min_cnr,
                    # use any vad for location, presumably it doesn't change
                    vads[0].alt,
@@ -360,18 +369,18 @@ class VADSet:
                    [i.etime for i in vads],
                    # data from VAD objects
                    [i.el for i in vads],
-                   [i.nbeams for i in vads],
-                   np.array([i.u for i in vads]),
-                   np.array([i.du for i in vads]),
-                   np.array([i.v for i in vads]),
-                   np.array([i.dv for i in vads]),
-                   np.array([i.w for i in vads]),
-                   np.array([i.dw for i in vads]),
-                   np.array([i.nbeams_used for i in vads]),
-                   np.array([i.speed for i in vads]),
-                   np.array([i.wdir for i in vads]),
-                   np.array([i.residual for i in vads]),
-                   np.array([i.correlation for i in vads]))
+                   ma.array([i.nbeams for i in vads]),
+                   ma.array([i.u for i in vads]),
+                   ma.array([i.du for i in vads]),
+                   ma.array([i.v for i in vads]),
+                   ma.array([i.dv for i in vads]),
+                   ma.array([i.w for i in vads]),
+                   ma.array([i.dw for i in vads]),
+                   ma.array([i.nbeams_used for i in vads]),
+                   ma.array([i.speed for i in vads]),
+                   ma.array([i.wdir for i in vads]),
+                   ma.array([i.residual for i in vads]),
+                   ma.array([i.correlation for i in vads]))
 
     @classmethod
     def from_file(cls, filename: str):
@@ -390,28 +399,39 @@ class VADSet:
         # make dates tz aware
         stime = [s.replace(tzinfo=pytz.utc) for s in stime]
         etime = [e.replace(tzinfo=pytz.utc) for e in etime]
-        # all vars are MaskedArray, cast back to what they originally were
-        return cls(np.array(f.variables['mean_snr'][:]),
+        # scalar values with a missing_value get read in as np.ma.MaskedArray
+        # if the single value is not masked, but as np.ma.core.MaskedConstant
+        # if the single value is masked. Instances of MaskedConstant don't
+        # compare well to each other or to other data types, so if the scalar
+        # lat/lon/alt is masked, replace it with a null-dimensioned masked
+        # array with a value of nan.
+        alt = (ma.array(np.nan) if f.variables['alt'][:] is np.ma.masked
+               else f.variables['alt'][:])
+        lat = (ma.array(np.nan) if f.variables['lat'][:] is np.ma.masked
+               else f.variables['lat'][:])
+        lon = (ma.array(np.nan) if f.variables['lon'][:] is np.ma.masked
+               else f.variables['lon'][:])
+        return cls(ma.array(f.variables['mean_snr'][:]),
                    int(f.variables['snr_threshold'][:]),
-                   f.variables['alt'][:],
-                   f.variables['lat'][:],
-                   f.variables['lon'][:],
+                   alt,
+                   lat,
+                   lon,
                    f.variables['height'][:],
                    stime,
                    etime,
-                   list(f.variables['elevation_angle'][:]),
-                   list(f.variables['nbeams'][:]),
-                   np.array(f.variables['u'][:]),
-                   np.array(f.variables['u_error'][:]),
-                   np.array(f.variables['v'][:]),
-                   np.array(f.variables['v_error'][:]),
-                   np.array(f.variables['w'][:]),
-                   np.array(f.variables['w_error'][:]),
-                   np.array(f.variables['nbeams_used'][:]),
-                   np.array(f.variables['wind_speed'][:]),
-                   np.array(f.variables['wind_direction'][:]),
-                   np.array(f.variables['residual'][:]),
-                   np.array(f.variables['correlation'][:]))
+                   ma.array(f.variables['elevation_angle'][:]),
+                   ma.array(f.variables['nbeams'][:]),
+                   ma.array(f.variables['u'][:]),
+                   ma.array(f.variables['u_error'][:]),
+                   ma.array(f.variables['v'][:]),
+                   ma.array(f.variables['v_error'][:]),
+                   ma.array(f.variables['w'][:]),
+                   ma.array(f.variables['w_error'][:]),
+                   ma.array(f.variables['nbeams_used'][:]),
+                   ma.array(f.variables['wind_speed'][:]),
+                   ma.array(f.variables['wind_direction'][:]),
+                   ma.array(f.variables['residual'][:]),
+                   ma.array(f.variables['correlation'][:]))
 
     @classmethod
     def from_PPIs(cls, ppi_files: List[PPI], min_cnr: int):
@@ -536,12 +556,15 @@ class VADSet:
         height.units = 'm'
         height.standard_name = 'height'
         scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
+        scan_duration.missing_value = -9999.0
         scan_duration[:] = [(i[0] - i[1]).total_seconds()
                             for i in zip(self.etime, self.stime)]
         scan_duration.long_name = 'PPI scan duration'
         scan_duration.units = 'second'
         elevation_angle = nc_file.createVariable('elevation_angle', 'f',
                                                  'time')
+        elevation_angle.missing_value = -9999.0
+
         elevation_angle[:] = self.el
         elevation_angle.long_name = 'Beam elevation angle'
         elevation_angle.units = 'degree'
@@ -550,92 +573,110 @@ class VADSet:
         nbeams.long_name = ('Number of beams (azimuth angles) in each PPI')
         nbeams.units = 'unitless'
         nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time','height'))
+        nbeams_used.missing_value = -9999.0
         nbeams_used[:, :] = self.nbeams_used
         nbeams_used.long_name = ('Number of beams (azimuth angles) used in wind'
                             ' vector estimations')
         nbeams_used.units = 'unitless'
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
+        u.missing_value = -9999.0
         u[:, :] = self.u
         u.long_name = 'Eastward component of wind vector'
         u.units = 'm/s'
         u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
+        u_error.missing_value = -9999.0
         u_error[:, :] = self.du
         u_error.long_name = ('Estimated error in eastward component of wind'
                              ' vector')
         u_error.units = 'm/s'
         v = nc_file.createVariable('v', 'f', ('time', 'height'))
+        v.missing_value = -9999.0
         v[:, :] = self.v
         v.long_name = 'Northward component of wind vector'
         v.units = 'm/s'
         v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
+        v_error.missing_value = -9999.0
         v_error[:, :] = self.dv
         v_error.long_name = ('Estimated error in northward component of wind'
                              ' vector')
         v_error.units = 'm/s'
         w = nc_file.createVariable('w', 'f', ('time', 'height'))
+        w.missing_value = -9999.0
         w[:, :] = self.w
         w.long_name = 'Vertical component of wind vector'
         w.units = 'm/s'
         w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
+        w_error.missing_value = -9999.0
         w_error[:, :] = self.dw
         w_error.long_name = ('Estimated error in vertical component of wind'
                              ' vector')
         w_error.units = 'm/s'
         wind_speed = nc_file.createVariable('wind_speed', 'f',
                                             ('time', 'height'))
+        wind_speed.missing_value = -9999.0
         wind_speed[:, :] = self.speed
         wind_speed.long_name = 'Wind speed'
         wind_speed.units = 'm/s'
         wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
                                                   ('time', 'height'))
+        wind_speed_error.missing_value = -9999.0
         # not currently calculating wind speed error?
         wind_speed_error[:, :] = wind_speed[:, :] * np.nan
         wind_speed_error.long_name = 'Wind speed error'
         wind_speed_error.units = 'm/s'
         wind_direction = nc_file.createVariable('wind_direction', 'f',
                                                 ('time', 'height'))
+        wind_direction.missing_value = -9999.0
         wind_direction[:, :] = self.wdir
         wind_direction.long_name = 'Wind direction'
         wind_direction.units = 'degree'
         wind_direction_error = nc_file.createVariable('wind_direction_error',
                                                       'f', ('time', 'height'))
+        wind_direction_error.missing_value = -9999.0
         wind_direction_error[:, :] = wind_direction[:, :] * np.nan
         wind_direction_error.long_name = 'Wind direction error'
         wind_direction_error.units = 'm/s'
         residual = nc_file.createVariable('residual', 'f', ('time', 'height'))
+        residual.missing_value = -9999.0
         residual[:, :] = self.residual
         residual.long_name = 'Fit residual'
         residual.units = 'm/s'
         correlation = nc_file.createVariable('correlation', 'f',
                                              ('time', 'height'))
+        correlation.missing_value = -9999.0
         correlation[:, :] = self.correlation
         correlation.long_name = 'Fit correlation coefficient'
         correlation.units = 'unitless'
         mean_snr = nc_file.createVariable('mean_snr', 'f',
                                           ('time', 'height'))
+        mean_snr.missing_value = -9999.0
         mean_snr[:, :] = self.mean_cnr
         mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
         mean_snr.units = 'unitless'
         snr_threshold = nc_file.createVariable('snr_threshold', 'f')
+        snr_threshold.missing_value = -9999.0
         snr_threshold[:] = self.min_cnr
         snr_threshold.long_name = 'SNR threshold'
         snr_threshold.units = 'unitless'
         lat = nc_file.createVariable('lat', 'f')
-        lat[:] = self.lat
+        lat.missing_value = -9999.0
+        lat[:] = VADSet.missing_val_if_nan(self.lat)
         lat.long_name = 'North latitude'
         lat.units = 'degree_N'
         lat.valid_min = -90
         lat.valid_max = 90
         lat.standard_name = 'latitude'
         lon = nc_file.createVariable('lon', 'f')
-        lon[:] = self.lon
+        lon.missing_value = -9999.0
+        lon[:] = VADSet.missing_val_if_nan(self.lon)
         lon.long_name = 'East longitude'
         lon.units = 'degree_E'
         lon.valid_min = -180
         lon.valid_max = 180
         lon.standard_name = 'longitude'
         alt = nc_file.createVariable('alt', 'f')
-        alt[:] = self.alt
+        alt.missing_value = -9999.0
+        alt[:] = VADSet.missing_val_if_nan(self.alt)
         alt.long_name = 'Altitude above mean sea level'
         alt.units = 'm'
         alt.standard_name = 'altitude'
