@@ -1,5 +1,4 @@
 import pytest
-import pickle
 import json
 import numpy as np
 import numpy.ma as ma
@@ -18,18 +17,17 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
     numpy.testing.assert_allclose(actual, desired, rtol, atol,
                                   equal_nan, err_msg, verbose)
 
-
 def compare_vadsets(a: VADSet, b: VADSet):
     """ Compare data from two VADSet objects, allowing for small differences
     from saving/reading files, etc"""
     assert a.min_cnr == b.min_cnr
     assert isinstance(b.min_cnr, int)
-    assert_allclose(a.alt, b.alt, equal_nan=True)
+    assert_allclose(a.alt, b.alt)
     assert isinstance(b.alt, numpy.ma.MaskedArray)
     # differences of like 6e-7 in these vals
-    assert a.lat == pytest.approx(b.lat)
+    assert_allclose(a.lat, b.lat)
     assert isinstance(b.lat, numpy.ma.MaskedArray)
-    assert a.lon == pytest.approx(b.lon)
+    assert_allclose(a.lon, b.lon)
     assert isinstance(b.lon, numpy.ma.MaskedArray)
     assert_allclose(a.height, b.height)
     assert isinstance(b.height, numpy.ma.MaskedArray)
@@ -39,10 +37,10 @@ def compare_vadsets(a: VADSet, b: VADSet):
     assert isinstance(b.stime, list)
     assert a.etime == b.etime
     assert isinstance(b.etime, list)
-    assert a.el == b.el
-    assert isinstance(b.el, list)
-    assert a.nbeams == b.nbeams
-    assert isinstance(b.nbeams, list)
+    assert_allclose(a.el, b.el)
+    assert isinstance(b.el, numpy.ma.MaskedArray)
+    assert_allclose(a.nbeams, b.nbeams)
+    assert isinstance(b.nbeams, numpy.ma.MaskedArray)
     assert_allclose(a.u, b.u, equal_nan=True)
     assert isinstance(b.u, numpy.ndarray)
     assert_allclose(a.du, b.du, equal_nan=True)
@@ -240,6 +238,15 @@ def test_vad_vs_vadset(ppi):
     a = VADSet.from_file(f"{datadir}/test_single_vad.nc")
     b = VADSet.from_file(f"{datadir}/test_single_vadset.nc")
     compare_vadsets(a, b)
+
+
+def test_missing_val_if_nan():
+    assert VADSet.missing_val_if_nan(25.3) == 25.3
+    assert VADSet.missing_val_if_nan(None) == -9999.0
+    assert VADSet.missing_val_if_nan(np.nan) == -9999.0
+    assert VADSet.missing_val_if_nan(np.nan, -999.0) == -999.0
+
+
 
 
 # updating tests example:
