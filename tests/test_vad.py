@@ -1,6 +1,7 @@
 import pytest
 import json
 import numpy as np
+import numpy.ma as ma
 import numpy.testing
 from pathlib import Path
 
@@ -15,6 +16,7 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
     "Wrap numpy.testing.assert_allclose() with different default tolerances."
     numpy.testing.assert_allclose(actual, desired, rtol, atol,
                                   equal_nan, err_msg, verbose)
+
 
 def compare_vadsets(a: VADSet, b: VADSet):
     """ Compare data from two VADSet objects, allowing for small differences
@@ -246,7 +248,125 @@ def test_missing_val_if_nan():
     assert VADSet.missing_val_if_nan(np.nan, -999.0) == -999.0
 
 
-
+def test_get_mask():
+    # masks made up from thresholds {"correlation_min": 0.9, "residual_max":
+    # 0.7, "mean_snr_max": -29.0} cor/res are much stricter than they will be
+    # in real life so i can guarantee they will remove values
+    corr_mask = np.array([[False, False, False, False, False, False, False,
+                           False, False, False, False, False, False, False,
+                           False, False, False, False, False, False, False,
+                           False, False, False, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True],
+                          [False, False, True, True, False, False, False, True,
+                           False, False, False, True, True, True, False, False,
+                           False, True, True, False, False, False, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True],
+                          [False, False, False, False, False, False, False,
+                           True, True, True, True, True, True, True, True,
+                           True, False, False, False, False, False, False,
+                           False, True, False, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True, True, True, True, True, True, True,
+                           True, True]])
+    res_mask = np.array([[False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True],
+                         [False, False, False, False, False, False, False,
+                          False, False, False, False, True, True, True, True,
+                          False, False, True, False, False, False, False,
+                          False, False, False, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True],
+                         [False, False, False, False, False, False, False,
+                          False, True, False, True, True, True, True, True,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True]])
+    snr_mask = np.array([[False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True],
+                         [False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True],
+                         [False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, False, False, False, False,
+                          False, False, False, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True, True,
+                          True, True, True, True, True, True, True, True]])
+    vs = VADSet.from_file(f"{datadir}/test_vadset.nc")
+    # correlation mask
+    vs.thresholds = {"correlation_min": 0.9}
+    assert ma.allequal(corr_mask, vs.get_mask())
+    # residual mask
+    vs.thresholds = {"residual_max": 0.7}
+    assert ma.allequal(res_mask, vs.get_mask())
+    # snr mask
+    vs.thresholds = {"mean_snr_min": -29.0}
+    assert ma.allequal(snr_mask, vs.get_mask())
+    # all three combined
+    vs.thresholds = {"correlation_min": 0.9, "residual_max": 0.7,
+                     "mean_snr_min": -29.0}
+    combined = ma.mask_or(ma.mask_or(corr_mask, res_mask), snr_mask)
+    assert ma.allequal(combined, vs.get_mask())
+    # make sure other vals in dict don't break processing
+    vs.thresholds = {"correlation_min": 0.9, "residual_max": 0.7,
+                     "mean_snr_min": -29.0, "test_value": 0.1}
+    assert ma.allequal(combined, vs.get_mask())
+    # check that blank mask (all false) returned when no thresholds present
+    vs.thresholds = {}
+    assert np.all(~vs.get_mask())
 
 # updating tests example:
 # d = {"du": vad.du.tolist(), "dv": vad.dv.tolist(), "dw": vad.dw.tolist()}

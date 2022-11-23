@@ -8,6 +8,7 @@ import numpy.ma as ma
 import netCDF4
 import matplotlib.pyplot as plt
 from typing import Tuple, List
+import json
 
 import Lidar_functions
 from ppi import PPI
@@ -352,6 +353,8 @@ class VADSet:
         self.wdir = wdir
         self.residual = residual
         self.correlation = correlation
+        # use load_thresholds to add thresholds dict
+        self.thresholds = None
 
     @classmethod
     def from_VADs(cls, vads: List[VAD], min_cnr: int):
@@ -482,6 +485,48 @@ class VADSet:
                                equal_nan=True)):
             return True
         return False
+
+    def load_thresholds(self, config: str):
+        """ Read dict of thresholding values from the given json file path. """
+        self.thresholds = json.load(open(config, "w"))
+
+    def get_mask(self) -> np.array:
+        """ Go through all variables to threshold on, combine into a single
+        mask that can be applied to all variables. Return the mask, in the form
+        of a boolean numpy array where true indicates the value is masked"""
+        masks = []
+        # create base mask of all false (so, will not mask any values) assuming
+        # all time-height arrays will have same dimensions, so just use
+        # correlation to get their shape
+        final_mask = np.full(self.correlation.shape, False)
+        if "correlation_min" in self.thresholds:
+            tmp = ma.masked_where(self.correlation
+                                  < self.thresholds["correlation_min"],
+                                  self.correlation)
+            masks.append(ma.getmaskarray(tmp))
+        if "residual_max" in self.thresholds:
+            tmp = ma.masked_where(self.residual
+                                  > self.thresholds["residual_max"],
+                                  self.residual)
+            masks.append(ma.getmaskarray(tmp))
+        if "mean_snr_min" in self.thresholds:
+            tmp = ma.masked_where(self.mean_cnr
+                                  < self.thresholds["mean_snr_min"],
+                                  self.mean_cnr)
+            masks.append(ma.getmaskarray(tmp))
+        # combine all masks
+        for m in masks:
+            final_mask = ma.mask_or(final_mask, m)
+        return final_mask
+
+    def apply_thresholds(self):
+        """ Apply thresholding for max/min values of different variables, if
+        present. """
+        if self.thresholds is None:
+            # can't apply thresholds if they're not present in the object.
+            return
+        mask = self.get_mask()
+        # apply mask to values
 
     def consensus_average(self, ranges: list) -> Tuple[np.ndarray, np.ndarray,
                                                        np.ndarray]:
