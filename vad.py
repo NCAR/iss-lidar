@@ -58,11 +58,12 @@ class VAD:
                * np.sum(np.cos(np.deg2rad(az[idxs]))))
         A33 = len(az[idxs]) * (np.sin(np.deg2rad(el))**2)
 
-        A = np.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
+        A = ma.array([[A11, A12, A13], [A12, A22, A23], [A13, A23, A33]])
         return A
 
     @staticmethod
     def nan_if_masked(barray: list) -> list:
+        """ Not currently used, but leaving for reference """
         return [b if not np.ma.is_masked(b) else np.nan for b in barray]
 
     @staticmethod
@@ -79,7 +80,9 @@ class VAD:
                                              np.cos(np.deg2rad(az[idxs])))
         b3 = np.sin(np.deg2rad(el)) * np.sum(vr[idxs, i])
 
-        b = np.array(VAD.nan_if_masked([b1, b2, b3]))
+        # now using ma arrays in VAD, so no need to convert to np arrays w/ nan
+        # b = np.array(VAD.nan_if_masked([b1, b2, b3]))
+        b = ma.array([b1, b2, b3])
         return b
 
     @staticmethod
