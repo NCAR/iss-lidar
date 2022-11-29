@@ -368,6 +368,33 @@ def test_get_mask():
     vs.thresholds = {}
     assert np.all(~vs.get_mask())
 
+
+def test_apply_mask():
+    vs_original = VADSet.from_file(f"{datadir}/test_vadset.nc")
+    mask = np.full(vs_original.correlation.shape, False)
+    mask[0, 0] = mask[0, 1] = mask[0, 2] = mask[0, 3] = mask[0, 4] = True
+    mask[1, 5] = mask[1, 6] = mask[1, 7] = mask[1, 8] = mask[1, 9] = True
+    mask[2, 0] = mask[2, 1] = mask[2, 2] = mask[2, 3] = mask[2, 4] = True
+    vs_masked = VADSet.from_file(f"{datadir}/test_vadset.nc")
+    vs_masked.thresholds = {"correlation_min": 0.9, "residual_max": 0.7,
+                            "mean_snr_min": -29.0}
+    vs_masked.apply_thresholds(mask=mask)
+    arr = np.array([True, True, True, True, True])
+    assert ma.allequal((ma.getmaskarray(vs_masked.u))[0, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.u))[1, 5:10], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.u))[2, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.v))[0, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.w))[0, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.du))[0, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.residual))[0, 0:5], arr)
+    assert ma.allequal((ma.getmaskarray(vs_masked.speed))[0, 0:5], arr)
+    # check that previous mask still present
+    # i know that none of the values i masked out were previously masked
+    assert ma.allequal(ma.getmaskarray(vs_masked.u),
+                       ma.mask_or(ma.getmaskarray(vs_original.u), mask))
+
+
+
 # updating tests example:
 # d = {"du": vad.du.tolist(), "dv": vad.dv.tolist(), "dw": vad.dw.tolist()}
 # f = open("testdata/vad/wind_errors.json", "w")

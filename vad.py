@@ -480,7 +480,8 @@ class VADSet:
             and np.array_equal(self.du, other.du, equal_nan=True)
             and np.array_equal(self.dv, other.dv, equal_nan=True)
             and np.array_equal(self.dw, other.dw, equal_nan=True)
-            and np.array_equal(self.nbeams_used, other.nbeams_used, equal_nan=True)
+            and np.array_equal(self.nbeams_used, other.nbeams_used,
+                               equal_nan=True)
             and np.array_equal(self.speed, other.speed, equal_nan=True)
             and np.array_equal(self.wdir, other.wdir, equal_nan=True)
             and np.array_equal(self.residual, other.residual, equal_nan=True)
@@ -522,14 +523,32 @@ class VADSet:
             final_mask = ma.mask_or(final_mask, m)
         return final_mask
 
-    def apply_thresholds(self):
+    def apply_thresholds(self, mask=None):
         """ Apply thresholding for max/min values of different variables, if
-        present. """
+        present. Option to supply a mask is for testing, shoud otherwise use
+        get_mask() to mask by thresholds"""
         if self.thresholds is None:
             # can't apply thresholds if they're not present in the object.
             return
-        mask = self.get_mask()
-        # apply mask to values
+        if mask is None:
+            mask = self.get_mask()
+        # apply mask to values. use mask_or to preserve existing masked vals.
+        # wind components
+        self.u.mask = ma.mask_or(ma.getmaskarray(self.u), mask)
+        self.v.mask = ma.mask_or(ma.getmaskarray(self.v), mask)
+        self.w.mask = ma.mask_or(ma.getmaskarray(self.w), mask)
+        self.du.mask = ma.mask_or(ma.getmaskarray(self.du), mask)
+        self.dv.mask = ma.mask_or(ma.getmaskarray(self.dv), mask)
+        self.dw.mask = ma.mask_or(ma.getmaskarray(self.dw), mask)
+        self.speed.mask = ma.mask_or(ma.getmaskarray(self.speed), mask)
+        self.wdir.mask = ma.mask_or(ma.getmaskarray(self.wdir), mask)
+        # ancillary variables
+        self.nbeams_used.mask = ma.mask_or(ma.getmaskarray(self.nbeams_used),
+                                           mask)
+        self.residual.mask = ma.mask_or(ma.getmaskarray(self.residual), mask)
+        self.correlation.mask = ma.mask_or(ma.getmaskarray(self.correlation),
+                                           mask)
+        self.mean_cnr.mask = ma.mask_or(ma.getmaskarray(self.mean_cnr), mask)
 
     def consensus_average(self, ranges: list) -> Tuple[np.ndarray, np.ndarray,
                                                        np.ndarray]:
@@ -620,11 +639,12 @@ class VADSet:
         nbeams[:] = self.nbeams
         nbeams.long_name = ('Number of beams (azimuth angles) in each PPI')
         nbeams.units = 'unitless'
-        nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time','height'))
+        nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time',
+                                                                  'height'))
         nbeams_used.missing_value = -9999.0
         nbeams_used[:, :] = self.nbeams_used
-        nbeams_used.long_name = ('Number of beams (azimuth angles) used in wind'
-                            ' vector estimations')
+        nbeams_used.long_name = ('Number of beams (azimuth angles) used in '
+                                 'wind vector estimations')
         nbeams_used.units = 'unitless'
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u.missing_value = -9999.0
