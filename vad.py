@@ -492,7 +492,7 @@ class VADSet:
 
     def load_thresholds(self, config: str):
         """ Read dict of thresholding values from the given json file path. """
-        self.thresholds = json.load(open(config, "w"))
+        self.thresholds = json.load(open(config, "r"))
 
     def get_mask(self) -> np.array:
         """ Go through all variables to threshold on, combine into a single
