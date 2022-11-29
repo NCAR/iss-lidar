@@ -1,5 +1,6 @@
 import pytest
 import json
+import netCDF4
 import numpy as np
 import numpy.ma as ma
 import numpy.testing
@@ -394,7 +395,22 @@ def test_apply_mask():
                        ma.mask_or(ma.getmaskarray(vs_original.u), mask))
 
 
-
+def test_thresholds_in_netcdf():
+    """ Test including threshold vals as attributes in netcdf. """
+    vs = VADSet.from_file(f"{datadir}/test_vadset.nc")
+    vs.thresholds = {"correlation_min": 0.9, "residual_max": 0.7,
+                     "mean_snr_min": -29.0}
+    vs.apply_thresholds()
+    vs.to_ARM_netcdf(f"{datadir}/test_vadset_thresholds.nc")
+    vs_thresholds = netCDF4.Dataset(f"{datadir}/test_vadset_thresholds.nc",
+                                    'r')
+    attrs = vs_thresholds.__dict__
+    assert "threshold_correlation_min" in attrs
+    assert "threshold_residual_max" in attrs
+    assert "threshold_mean_snr_min" in attrs
+    assert attrs["threshold_correlation_min"] == 0.9
+    assert attrs["threshold_residual_max"] == 0.7
+    assert attrs["threshold_mean_snr_min"] == -29.0
 # updating tests example:
 # d = {"du": vad.du.tolist(), "dv": vad.dv.tolist(), "dw": vad.dw.tolist()}
 # f = open("testdata/vad/wind_errors.json", "w")

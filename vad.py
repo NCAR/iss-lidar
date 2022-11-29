@@ -753,4 +753,10 @@ class VADSet:
         nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
             '%Y/%m/%d %H:%M:%S UTC')
 
+        # add thresholding vals as attributes, if present
+        if self.thresholds:
+            for t in self.thresholds:
+                name = "threshold_" + t
+                nc_file.setncattr(name, self.thresholds[t])
+
         nc_file.close()
