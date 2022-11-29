@@ -492,6 +492,12 @@ class VADSet:
 
     def load_thresholds(self, config: str):
         """ Read dict of thresholding values from the given json file path. """
+        # sample threshold config contents:
+        # {
+        #     "correlation_min": 0.3,
+        #     "residual_max": 10.0,
+        #     "mean_snr_min": -29.0
+        # }
         self.thresholds = json.load(open(config, "r"))
 
     def get_mask(self) -> np.array:
