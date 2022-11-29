@@ -24,6 +24,8 @@ def create_parser():
                                      " from PPI scans")
     parser.add_argument("--min_cnr", default=-22, type=float, help="threshold"
                         " cnr below this value")
+    parser.add_argument("--threshold_config", default=None, help="path to "
+                        "config file of post-VAD thresholding parameters")
     parser.add_argument("destdir", help="directory to save VAD files to")
     parser.add_argument("ppifiles", help="ppi file(s) for input", nargs='+')
     return parser.parse_args()
@@ -48,6 +50,10 @@ def main():
     if len(args.ppifiles) == 1:
         ppi_scans = select_files(args.ppifiles[0])
     vadset = VADSet.from_PPIs(ppi_scans, args.min_cnr)
+    if(args.threshold_config):
+        # apply thresholds if a config is present
+        vadset.load_thresholds(args.threshold_config)
+        vadset.apply_thresholds()
     save(vadset, args.destdir)
 
 
