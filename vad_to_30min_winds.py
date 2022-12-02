@@ -92,14 +92,17 @@ def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
     height.long_name = 'Height above instrument level'
     height.units = 'm'
     u_var = nc_file.createVariable('u', 'f', ('time', 'height'))
+    u_var.missing_value = -9999
     u_var[:, :] = u_mean
     u_var.long_name = 'Eastward component of wind vector'
     u_var.units = 'm/s'
     v_var = nc_file.createVariable('v', 'f', ('time', 'height'))
+    v_var.missing_value = -9999
     v_var[:, :] = v_mean
     v_var.long_name = 'Northward component of wind vector'
     v_var.units = 'm/s'
     w_var = nc_file.createVariable('w', 'f', ('time', 'height'))
+    w_var.missing_value = -9999
     w_var[:, :] = w_mean
     w_var.long_name = 'Vertical component of wind vector'
     w_var.units = 'm/s'
