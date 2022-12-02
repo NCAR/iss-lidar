@@ -395,6 +395,23 @@ def test_apply_mask():
                        ma.mask_or(ma.getmaskarray(vs_original.u), mask))
 
 
+def test_nbeams_fraction_threshold():
+    nbeams = [100, 50, 200]
+    nbeams_used = np.array([[100, 90, 80, 60, 40],[50, 40,30, 20, 10],
+                            [200, 150, 125, 100, 75]])
+    expected_mask = np.array([[False, False, False, False, True],
+                              [False, False, False, True, True],
+                              [False, False, False, False, True]])
+    mask = VADSet.get_nbeams_used_mask(nbeams, nbeams_used, 0.5)
+    assert ma.allequal(mask, expected_mask)
+    vs = VADSet.from_file(f"{datadir}/test_vadset.nc")
+    mask = VADSet.get_nbeams_used_mask(vs.nbeams, vs.nbeams_used, 0.5)
+    # nbeams in this vadset is always 360. check that no nbeams_used are left
+    # if nbeams_used is less than 180
+    vs.nbeams_used.mask = ma.mask_or(vs.nbeams_used.mask, mask)
+    assert ma.min(vs.nbeams_used) >= 180
+
+
 def test_thresholds_in_netcdf():
     """ Test including threshold vals as attributes in netcdf. """
     vs = VADSet.from_file(f"{datadir}/test_vadset.nc")

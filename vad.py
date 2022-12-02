@@ -496,9 +496,26 @@ class VADSet:
         # {
         #     "correlation_min": 0.3,
         #     "residual_max": 10.0,
-        #     "mean_snr_min": -29.0
+        #     "mean_snr_min": -29.0,
+        #     "nbeams_used_min_fraction": 0.5
         # }
         self.thresholds = json.load(open(config, "r"))
+
+    @staticmethod
+    def get_nbeams_used_mask(nbeams: List, nbeams_used: np.array,
+                             threshold: float) -> np.array:
+        """ Since total nbeams can vary between scans, we give the threshold as
+        a fraction of possible nbeams that should be present. """
+        # separate out this function for testing
+        # nbeams_used = time x height array
+        # nbeams is just list of length times. broadcast it to an array of
+        # time x height
+        nbeams = ma.repeat(ma.array([nbeams]), nbeams_used.shape[-1],
+                           axis=0).swapaxes(1, 0)
+        fraction = nbeams_used / nbeams
+        fraction = ma.masked_where(fraction < threshold,
+                                   fraction)
+        return ma.getmaskarray(fraction)
 
     def get_mask(self) -> np.array:
         """ Go through all variables to threshold on, combine into a single
@@ -524,6 +541,12 @@ class VADSet:
                                   < self.thresholds["mean_snr_min"],
                                   self.mean_cnr)
             masks.append(ma.getmaskarray(tmp))
+        if "nbeams_used_min_fraction" in self.thresholds:
+            mask = VADSet.get_nbeams_used_mask(self.nbeams, self.nbeams_used,
+                                               self.thresholds["nbeams_used_mi"
+                                                               "n_fraction"])
+            masks.append(mask)
+
         # combine all masks
         for m in masks:
             final_mask = ma.mask_or(final_mask, m)
