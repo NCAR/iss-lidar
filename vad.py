@@ -529,7 +529,7 @@ class VADSet:
             final_mask = ma.mask_or(final_mask, m)
         return final_mask
 
-    def apply_thresholds(self, mask=None):
+    def apply_thresholds(self, mask: np.array = None):
         """ Apply thresholding for max/min values of different variables, if
         present. Option to supply a mask is for testing, shoud otherwise use
         get_mask() to mask by thresholds"""
@@ -556,8 +556,8 @@ class VADSet:
                                            mask)
         self.mean_cnr.mask = ma.mask_or(ma.getmaskarray(self.mean_cnr), mask)
 
-    def consensus_average(self, ranges: list) -> Tuple[np.ndarray, np.ndarray,
-                                                       np.ndarray]:
+    def consensus_average(self, ranges: list) -> Tuple[ma.array, ma.array,
+                                                       ma.array]:
         """ Return consensus averaged u,v,w for 30-min increments starting at
         list of time ranges """
         u_mean = np.zeros((len(ranges), len(self.height)))
@@ -590,7 +590,8 @@ class VADSet:
                                                                  5)
                 w_mean[idx, hgt] = Lidar_functions.consensus_avg(w_all[:, hgt],
                                                                  5)
-        return (u_mean, v_mean, w_mean)
+        return (ma.masked_invalid(u_mean), ma.masked_invalid(v_mean),
+                ma.masked_invalid(w_mean))
 
     def to_ARM_netcdf(self, filepath: str):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
