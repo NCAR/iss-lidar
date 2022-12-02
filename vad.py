@@ -661,8 +661,9 @@ class VADSet:
         u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
         u_error.missing_value = -9999.0
         u_error[:, :] = self.du
-        u_error.long_name = ('Estimated error in eastward component of wind'
-                             ' vector')
+        u_error.long_name = ('Sampling uncertainty in eastward component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
         u_error.units = 'm/s'
         v = nc_file.createVariable('v', 'f', ('time', 'height'))
         v.missing_value = -9999.0
@@ -672,8 +673,9 @@ class VADSet:
         v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
         v_error.missing_value = -9999.0
         v_error[:, :] = self.dv
-        v_error.long_name = ('Estimated error in northward component of wind'
-                             ' vector')
+        v_error.long_name = ('Sampling uncertainty in northward component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
         v_error.units = 'm/s'
         w = nc_file.createVariable('w', 'f', ('time', 'height'))
         w.missing_value = -9999.0
@@ -683,8 +685,9 @@ class VADSet:
         w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
         w_error.missing_value = -9999.0
         w_error[:, :] = self.dw
-        w_error.long_name = ('Estimated error in vertical component of wind'
-                             ' vector')
+        w_error.long_name = ('Sampling uncertainty in vertical component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
         w_error.units = 'm/s'
         wind_speed = nc_file.createVariable('wind_speed', 'f',
                                             ('time', 'height'))
