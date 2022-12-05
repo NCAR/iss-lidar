@@ -8,6 +8,7 @@ Created on Thu Feb  4 11:16:18 2021
 """
 
 import numpy as np
+import numpy.ma as ma
 import matplotlib.pyplot as plt
 import scipy.interpolate
 import netCDF4
@@ -472,38 +473,12 @@ def xcorr(y1, y2):
 
     return corr, lags
 
-
-def read_cfradial(file_path):
-    """
-    This function reads in cfradial files to variables needed for VAD analysis
-    """
-    lidar_file = netCDF4.Dataset(file_path, 'r')
-    cnr = lidar_file.variables['cnr'][:]
-    ranges = lidar_file.variables['range'][:]
-    vr = lidar_file.variables['radial_wind_speed'][:]
-    azimuth = lidar_file.variables['azimuth'][:]
-    elevation = lidar_file.variables['elevation'][0]
-    latitude = lidar_file.variables['latitude'][:]
-    longitude = lidar_file.variables['longitude'][:]
-    altitude = lidar_file.variables['altitude'][:]
-    # convert start/end to datetimes so they're easier to use.
-    # times in cfradial files are in UTC. timezone is not specified in
-    # start_time attribute, but is specified as 'Z' instead of 'UTC' in
-    # start_datetime attribute, which datetime won't parse.
-    start = datetime.strptime(lidar_file.start_time,
-                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
-    end = datetime.strptime(lidar_file.end_time,
-                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
-
-    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
-            longitude, altitude]
-
 #############################################################################
 # This function uses consensus averaging to output an average given a window
 #############################################################################
 
 
-def consensus_avg(vals, window):
+def consensus_avg(vals: ma.array, window: float):
 
     max_num_inds = 0
     vals = sorted(vals[~np.isnan(vals)])
