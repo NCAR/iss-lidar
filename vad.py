@@ -11,6 +11,7 @@ from typing import Tuple, List
 import json
 
 import Lidar_functions
+import tools
 from ppi import PPI
 
 
@@ -84,16 +85,6 @@ class VAD:
         # b = np.array(VAD.nan_if_masked([b1, b2, b3]))
         b = ma.array([b1, b2, b3])
         return b
-
-    @staticmethod
-    def wspd_wdir_from_uv(u: np.ndarray,
-                          v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        # calculate derived products
-        speed = np.sqrt(u**2 + v**2)
-        wdir = 270 - np.rad2deg(np.arctan2(v, u))
-        notnan = ~np.isnan(wdir)
-        wdir[notnan] %= 360
-        return speed, wdir
 
     def __init__(self, ppi: PPI, u: np.ndarray, v: np.ndarray, w: np.ndarray,
                  speed: np.ndarray, wdir: np.ndarray, du: np.ndarray,
@@ -169,7 +160,7 @@ class VAD:
             w[i] = temp[2]
 
         # calculate derived products
-        speed, wdir = VAD.wspd_wdir_from_uv(u, v)
+        speed, wdir = tools.wspd_wdir_from_uv(u, v)
 
         residual = np.sqrt(np.nanmean(((((u*x)+(v*y)+((w*z)
                            [None, :]))/np.sqrt(x**2+y**2+z**2))-ppi.vr)**2,

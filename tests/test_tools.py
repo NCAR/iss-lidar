@@ -1,5 +1,7 @@
 from datetime import datetime
-from tools import create_filename
+import numpy as np
+
+from tools import create_filename, wspd_wdir_from_uv
 
 
 def test_create_filename():
@@ -21,3 +23,13 @@ def test_create_filename():
     # without prefix
     fname = destdir + "/30min_winds_20220329.nc"
     assert create_filename(dt, destdir, "30min_winds", None) == fname
+
+
+def test_wind_from_uv():
+    u = np.array([-1, np.NZERO, 0, 1, 0, -2, np.nan], dtype=float)
+    v = np.array([np.NINF, np.NZERO, 0, 0, -1, -2, 2], dtype=float)
+    xspd = np.array([np.inf, 0, 0, 1, 1, np.sqrt(8), np.nan], dtype=float)
+    xdir = np.array([0, 90, 270, 270, 0, 45, np.nan], dtype=float)
+    wspd, wdir = wspd_wdir_from_uv(u, v)
+    np.testing.assert_allclose(wspd, xspd, equal_nan=True)
+    np.testing.assert_allclose(wdir, xdir, equal_nan=True)

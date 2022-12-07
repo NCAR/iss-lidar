@@ -4,6 +4,8 @@ import os
 import netCDF4
 import pytz
 from datetime import datetime
+import numpy as np
+from typing import Tuple
 
 
 def create_filename(date: datetime, destdir: str, filetype: str,
@@ -40,3 +42,12 @@ def read_cfradial(file_path):
     return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
             longitude, altitude]
 
+
+def wspd_wdir_from_uv(u: np.ndarray,
+                      v: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    # calculate derived products
+    speed = np.sqrt(u**2 + v**2)
+    wdir = 270 - np.rad2deg(np.arctan2(v, u))
+    notnan = ~np.isnan(wdir)
+    wdir[notnan] %= 360
+    return speed, wdir
