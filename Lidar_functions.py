@@ -479,11 +479,11 @@ def xcorr(y1, y2):
 
 
 def consensus_avg(vals: ma.array, window: float):
+    vals = ma.masked_invalid(vals)
 
     max_num_inds = 0
-    vals = sorted(vals[~np.isnan(vals)])
-
-    if vals == []:
+    vals = ma.sort(vals[vals.mask == False])
+    if vals.size == 0:
         return np.nan
 
     for v in vals:
@@ -491,7 +491,6 @@ def consensus_avg(vals: ma.array, window: float):
         inds = np.where(booleans)[0]
         num_inds = len(inds)
         val_range = vals[inds[-1]] - vals[inds[0]]
-
         if num_inds > max_num_inds:
             max_num_inds = num_inds
             final_range = val_range
@@ -504,5 +503,4 @@ def consensus_avg(vals: ma.array, window: float):
                 final_inds = inds
         final_vals = [vals[i] for i in final_inds]
     avg = np.mean(final_vals)
-
     return avg
