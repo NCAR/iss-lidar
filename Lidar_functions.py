@@ -11,9 +11,7 @@ import numpy as np
 import numpy.ma as ma
 import matplotlib.pyplot as plt
 import scipy.interpolate
-import netCDF4
-from datetime import datetime
-import pytz
+from typing import Tuple, List
 
 
 class gridded_RHI:
@@ -473,24 +471,32 @@ def xcorr(y1, y2):
 
     return corr, lags
 
-#############################################################################
-# This function uses consensus averaging to output an average given a window
-#############################################################################
 
-
-def consensus_avg(vals: ma.array, window: float):
+def consensus_avg(vals: ma.array, window: float) -> Tuple[float, List]:
+    """
+    This function uses consensus averaging to calculate the mean value of all
+    data points that lie within a given window size of each other, where it
+    finds the window span with the most points in it and with the smallest
+    spread in values. It returns the consensus average and a list of which
+    indices of the original array were used in the averaging.
+    """
+    # make sure nans are masked
     vals = ma.masked_invalid(vals)
 
-    max_num_inds = 0
-    vals = ma.sort(vals[vals.mask == False])
-    if vals.size == 0:
-        return np.nan
+    # sort but retain original indices
+    sorted_idxs = ma.argsort(vals)
+    sorted_vals = ma.sort(vals)
 
-    for v in vals:
-        booleans = np.logical_and(vals >= v, vals <= v+window)
-        inds = np.where(booleans)[0]
+    # if all masked, return
+    if sorted_vals.mask.all():
+        return (np.nan, [])
+
+    max_num_inds = 0
+    for v in sorted_vals[sorted_vals.mask == False]:  # noqa: E712
+        booleans = ma.logical_and(sorted_vals >= v, sorted_vals <= v+window)
+        inds = ma.where(booleans)[0]
         num_inds = len(inds)
-        val_range = vals[inds[-1]] - vals[inds[0]]
+        val_range = sorted_vals[inds[-1]] - sorted_vals[inds[0]]
         if num_inds > max_num_inds:
             max_num_inds = num_inds
             final_range = val_range
@@ -501,6 +507,7 @@ def consensus_avg(vals: ma.array, window: float):
                 max_num_inds = num_inds
                 final_range = val_range
                 final_inds = inds
-        final_vals = [vals[i] for i in final_inds]
+        final_vals = [sorted_vals[i] for i in final_inds]
+        orig_idxs = [sorted_idxs[i] for i in final_inds]
     avg = np.mean(final_vals)
-    return avg
+    return (avg, orig_idxs)
