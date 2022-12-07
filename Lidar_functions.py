@@ -492,21 +492,18 @@ def consensus_avg(vals: ma.array, window: float) -> Tuple[float, List]:
         return (np.nan, [])
 
     max_num_inds = 0
+    final_range = np.inf
     for v in sorted_vals[sorted_vals.mask == False]:  # noqa: E712
         booleans = ma.logical_and(sorted_vals >= v, sorted_vals <= v+window)
         inds = ma.where(booleans)[0]
         num_inds = len(inds)
         val_range = sorted_vals[inds[-1]] - sorted_vals[inds[0]]
-        if num_inds > max_num_inds:
+        if (num_inds > max_num_inds) or (num_inds == max_num_inds
+                                         and val_range < final_range):
             max_num_inds = num_inds
             final_range = val_range
             final_inds = inds
 
-        elif num_inds == max_num_inds:
-            if val_range < final_range:
-                max_num_inds = num_inds
-                final_range = val_range
-                final_inds = inds
     final_vals = [sorted_vals[i] for i in final_inds]
     orig_idxs = [sorted_idxs[i] for i in final_inds]
     avg = np.mean(final_vals)
