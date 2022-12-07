@@ -718,25 +718,24 @@ class VADSet:
         wind_speed[:, :] = self.speed
         wind_speed.long_name = 'Wind speed'
         wind_speed.units = 'm/s'
-        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
-                                                  ('time', 'height'))
-        wind_speed_error.missing_value = -9999.0
-        # not currently calculating wind speed error?
-        wind_speed_error[:, :] = wind_speed[:, :] * np.nan
-        wind_speed_error.long_name = 'Wind speed error'
-        wind_speed_error.units = 'm/s'
+        #wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
+        #                                          ('time', 'height'))
+        #wind_speed_error.missing_value = -9999.0
+        #wind_speed_error[:, :] = wind_speed[:, :] * np.nan
+        #wind_speed_error.long_name = 'Wind speed error'
+        #wind_speed_error.units = 'm/s'
         wind_direction = nc_file.createVariable('wind_direction', 'f',
                                                 ('time', 'height'))
         wind_direction.missing_value = -9999.0
         wind_direction[:, :] = self.wdir
         wind_direction.long_name = 'Wind direction'
         wind_direction.units = 'degree'
-        wind_direction_error = nc_file.createVariable('wind_direction_error',
-                                                      'f', ('time', 'height'))
-        wind_direction_error.missing_value = -9999.0
-        wind_direction_error[:, :] = wind_direction[:, :] * np.nan
-        wind_direction_error.long_name = 'Wind direction error'
-        wind_direction_error.units = 'm/s'
+        #wind_direction_error = nc_file.createVariable('wind_direction_error',
+        #                                              'f', ('time', 'height'))
+        #wind_direction_error.missing_value = -9999.0
+        #wind_direction_error[:, :] = wind_direction[:, :] * np.nan
+        #wind_direction_error.long_name = 'Wind direction error'
+        #wind_direction_error.units = 'm/s'
         residual = nc_file.createVariable('residual', 'f', ('time', 'height'))
         residual.missing_value = -9999.0
         residual[:, :] = self.residual
