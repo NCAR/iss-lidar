@@ -504,6 +504,10 @@ def consensus_avg(vals: ma.array, window: float) -> Tuple[float, List]:
             final_range = val_range
             final_inds = inds
 
+    # if there is no window with more than one point in it, return nan
+    if max_num_inds < 2:
+        return (np.nan, [])
+
     final_vals = [sorted_vals[i] for i in final_inds]
     orig_idxs = [sorted_idxs[i] for i in final_inds]
     avg = np.mean(final_vals)

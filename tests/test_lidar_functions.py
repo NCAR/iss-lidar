@@ -43,3 +43,8 @@ def test_consensus_avg():
     avg, idxs = consensus_avg(vals, window)
     assert avg == 0.6195047533333333
     assert sorted(idxs) == [0, 2, 4]
+    # should return nan if there is no window with more than one point in it
+    vals = ma.array([0.0, 10.0, 20.0])
+    avg, idxs = consensus_avg(vals, window)
+    assert np.isnan(avg)
+    assert not idxs
