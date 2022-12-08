@@ -65,9 +65,12 @@ class ConsensusSet(VADSet):
     def from_VADSet(cls, vs: VADSet, window: float, span: dt.timedelta):
         # create half-hour time bins
         ranges = ConsensusSet.create_time_ranges(vs.stime[0].date(), span)
-        u_mean = n_u = ma.zeros((len(ranges), len(vs.height)))
-        v_mean = n_v = ma.zeros((len(ranges), len(vs.height)))
-        w_mean = n_w = ma.zeros((len(ranges), len(vs.height)))
+        u_mean = ma.zeros((len(ranges), len(vs.height)))
+        v_mean = ma.zeros((len(ranges), len(vs.height)))
+        w_mean = ma.zeros((len(ranges), len(vs.height)))
+        n_u = ma.zeros((len(ranges), len(vs.height)))
+        n_v = ma.zeros((len(ranges), len(vs.height)))
+        n_w = ma.zeros((len(ranges), len(vs.height)))
         residual = ma.zeros((len(ranges), len(vs.height)))
         correlation = ma.zeros((len(ranges), len(vs.height)))
         mean_cnr = ma.zeros((len(ranges), len(vs.height)))
