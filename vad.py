@@ -670,6 +670,29 @@ class VADSet:
         """
         Add base wind variables to netCDF
         """
+        # location
+        lat = nc_file.createVariable('lat', 'f')
+        lat.missing_value = -9999.0
+        lat[:] = VADSet.missing_val_if_nan(self.lat)
+        lat.long_name = 'North latitude'
+        lat.units = 'degree_N'
+        lat.valid_min = -90
+        lat.valid_max = 90
+        lat.standard_name = 'latitude'
+        lon = nc_file.createVariable('lon', 'f')
+        lon.missing_value = -9999.0
+        lon[:] = VADSet.missing_val_if_nan(self.lon)
+        lon.long_name = 'East longitude'
+        lon.units = 'degree_E'
+        lon.valid_min = -180
+        lon.valid_max = 180
+        lon.standard_name = 'longitude'
+        alt = nc_file.createVariable('alt', 'f')
+        alt.missing_value = -9999.0
+        alt[:] = VADSet.missing_val_if_nan(self.alt)
+        alt.long_name = 'Altitude above mean sea level'
+        alt.units = 'm'
+        alt.standard_name = 'altitude'
         # uvw
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u.missing_value = -9999.0
@@ -717,29 +740,6 @@ class VADSet:
         mean_snr[:, :] = self.mean_cnr
         mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
         mean_snr.units = 'unitless'
-        # location
-        lat = nc_file.createVariable('lat', 'f')
-        lat.missing_value = -9999.0
-        lat[:] = VADSet.missing_val_if_nan(self.lat)
-        lat.long_name = 'North latitude'
-        lat.units = 'degree_N'
-        lat.valid_min = -90
-        lat.valid_max = 90
-        lat.standard_name = 'latitude'
-        lon = nc_file.createVariable('lon', 'f')
-        lon.missing_value = -9999.0
-        lon[:] = VADSet.missing_val_if_nan(self.lon)
-        lon.long_name = 'East longitude'
-        lon.units = 'degree_E'
-        lon.valid_min = -180
-        lon.valid_max = 180
-        lon.standard_name = 'longitude'
-        alt = nc_file.createVariable('alt', 'f')
-        alt.missing_value = -9999.0
-        alt[:] = VADSet.missing_val_if_nan(self.alt)
-        alt.long_name = 'Altitude above mean sea level'
-        alt.units = 'm'
-        alt.standard_name = 'altitude'
 
     def add_aux_variables(self, nc_file: netCDF4.Dataset):
         """
