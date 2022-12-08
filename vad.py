@@ -409,7 +409,7 @@ class VADSet:
         lon = (ma.array(np.nan) if f.variables['lon'][:] is np.ma.masked
                else f.variables['lon'][:])
         return cls(ma.array(f.variables['mean_snr'][:]),
-                   int(f.variables['snr_threshold'][:]),
+                   int(f.input_ppi_min_cnr),
                    alt,
                    lat,
                    lon,
@@ -610,12 +610,15 @@ class VADSet:
     def to_ARM_netcdf(self, filepath: str):
         str_start_time = self.stime[0].strftime('%Y-%m-%d %H:%M:%S %Z')
         str_day_start_time = self.stime[0].strftime('%Y-%m-%d')
+        # create netcdf file
         nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
+        # create dimensions: time, height, bound
         nc_file.createDimension('time', None)
         # still currently assuming that all files in a VADSet have the same
         # heights
         nc_file.createDimension('height', len(self.height))
         nc_file.createDimension('bound', 2)
+        # create time variables
         base_time = nc_file.createVariable('base_time', 'i')
         base_time.string = str_start_time
         base_time.long_name = 'Base time in Epoch'
@@ -638,96 +641,60 @@ class VADSet:
                                                       base_time.units),
                                      netCDF4.date2num(self.etime,
                                                       base_time.units)))
+        # create height variable
         height = nc_file.createVariable('height', 'f', 'height')
         height[:] = self.height
         height.long_name = 'Height above ground level'
         height.units = 'm'
         height.standard_name = 'height'
-        scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
-        scan_duration.missing_value = -9999.0
-        scan_duration[:] = [(i[0] - i[1]).total_seconds()
-                            for i in zip(self.etime, self.stime)]
-        scan_duration.long_name = 'PPI scan duration'
-        scan_duration.units = 'second'
-        elevation_angle = nc_file.createVariable('elevation_angle', 'f',
-                                                 'time')
-        elevation_angle.missing_value = -9999.0
 
-        elevation_angle[:] = self.el
-        elevation_angle.long_name = 'Beam elevation angle'
-        elevation_angle.units = 'degree'
-        nbeams = nc_file.createVariable('nbeams', 'i', 'time')
-        nbeams[:] = self.nbeams
-        nbeams.long_name = ('Number of beams (azimuth angles) in each PPI')
-        nbeams.units = 'unitless'
-        nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time',
-                                                                  'height'))
-        nbeams_used.missing_value = -9999.0
-        nbeams_used[:, :] = self.nbeams_used
-        nbeams_used.long_name = ('Number of beams (azimuth angles) used in '
-                                 'wind vector estimations')
-        nbeams_used.units = 'unitless'
+        # add base vars
+        self.add_base_variables(nc_file)
+        self.add_aux_variables(nc_file)
+
+        # add basic attributes for all file types
+        nc_file.Conventions = 'ARM-1.1'
+        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
+            '%Y/%m/%d %H:%M:%S UTC')
+        # add file type specific attributes
+        self.add_attributes(nc_file)
+
+        nc_file.close()
+
+    def add_base_variables(self, nc_file: netCDF4.Dataset):
+        """
+        Add base wind variables to netCDF
+        """
+        # uvw
         u = nc_file.createVariable('u', 'f', ('time', 'height'))
         u.missing_value = -9999.0
         u[:, :] = self.u
         u.long_name = 'Eastward component of wind vector'
         u.units = 'm/s'
-        u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
-        u_error.missing_value = -9999.0
-        u_error[:, :] = self.du
-        u_error.long_name = ('Sampling uncertainty in eastward component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        u_error.units = 'm/s'
         v = nc_file.createVariable('v', 'f', ('time', 'height'))
         v.missing_value = -9999.0
         v[:, :] = self.v
         v.long_name = 'Northward component of wind vector'
         v.units = 'm/s'
-        v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
-        v_error.missing_value = -9999.0
-        v_error[:, :] = self.dv
-        v_error.long_name = ('Sampling uncertainty in northward component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        v_error.units = 'm/s'
         w = nc_file.createVariable('w', 'f', ('time', 'height'))
         w.missing_value = -9999.0
         w[:, :] = self.w
         w.long_name = 'Vertical component of wind vector'
         w.units = 'm/s'
-        w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
-        w_error.missing_value = -9999.0
-        w_error[:, :] = self.dw
-        w_error.long_name = ('Sampling uncertainty in vertical component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        w_error.units = 'm/s'
+        # wspd/wdir
         wind_speed = nc_file.createVariable('wind_speed', 'f',
                                             ('time', 'height'))
         wind_speed.missing_value = -9999.0
         wind_speed[:, :] = self.speed
         wind_speed.long_name = 'Wind speed'
         wind_speed.units = 'm/s'
-        wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
-                                                  ('time', 'height'))
-        wind_speed_error.missing_value = -9999.0
-        # not currently calculating wind speed error?
-        wind_speed_error[:, :] = wind_speed[:, :] * np.nan
-        wind_speed_error.long_name = 'Wind speed error'
-        wind_speed_error.units = 'm/s'
         wind_direction = nc_file.createVariable('wind_direction', 'f',
                                                 ('time', 'height'))
         wind_direction.missing_value = -9999.0
         wind_direction[:, :] = self.wdir
         wind_direction.long_name = 'Wind direction'
         wind_direction.units = 'degree'
-        wind_direction_error = nc_file.createVariable('wind_direction_error',
-                                                      'f', ('time', 'height'))
-        wind_direction_error.missing_value = -9999.0
-        wind_direction_error[:, :] = wind_direction[:, :] * np.nan
-        wind_direction_error.long_name = 'Wind direction error'
-        wind_direction_error.units = 'm/s'
+        # residual, correlation, mean_snr (present in both vad + consensus)
         residual = nc_file.createVariable('residual', 'f', ('time', 'height'))
         residual.missing_value = -9999.0
         residual[:, :] = self.residual
@@ -745,11 +712,7 @@ class VADSet:
         mean_snr[:, :] = self.mean_cnr
         mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
         mean_snr.units = 'unitless'
-        snr_threshold = nc_file.createVariable('snr_threshold', 'f')
-        snr_threshold.missing_value = -9999.0
-        snr_threshold[:] = self.min_cnr
-        snr_threshold.long_name = 'SNR threshold'
-        snr_threshold.units = 'unitless'
+        # location
         lat = nc_file.createVariable('lat', 'f')
         lat.missing_value = -9999.0
         lat[:] = VADSet.missing_val_if_nan(self.lat)
@@ -773,14 +736,79 @@ class VADSet:
         alt.units = 'm'
         alt.standard_name = 'altitude'
 
-        nc_file.Conventions = 'ARM-1.1'
-        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
-            '%Y/%m/%d %H:%M:%S UTC')
+    def add_aux_variables(self, nc_file: netCDF4.Dataset):
+        """
+        Add auxiliary variables (generally metadata, that are different between
+        VADSet and ConsensusSet)
+        """
+        # uvw errors
+        u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
+        u_error.missing_value = -9999.0
+        u_error[:, :] = self.du
+        u_error.long_name = ('Sampling uncertainty in eastward component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
+        u_error.units = 'm/s'
+        v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
+        v_error.missing_value = -9999.0
+        v_error[:, :] = self.dv
+        v_error.long_name = ('Sampling uncertainty in northward component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
+        v_error.units = 'm/s'
+        w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
+        w_error.missing_value = -9999.0
+        w_error[:, :] = self.dw
+        w_error.long_name = ('Sampling uncertainty in vertical component of'
+                             ' wind due to azimuths used assuming 1 m/s'
+                             ' error in radial velocities')
+        w_error.units = 'm/s'
+        # wspd/wdir errors (not currently used)
+        # wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
+        #                                           ('time', 'height'))
+        # wind_speed_error.missing_value = -9999.0
+        # # not currently calculating wind speed error?
+        # wind_speed_error[:, :] = wind_speed[:, :] * np.nan
+        # wind_speed_error.long_name = 'Wind speed error'
+        # wind_speed_error.units = 'm/s'
+        # wind_direction_error = nc_file.createVariable('wind_direction_error',
+        #                                               'f', ('time', 'height'))
+        # wind_direction_error.missing_value = -9999.0
+        # wind_direction_error[:, :] = wind_direction[:, :] * np.nan
+        # wind_direction_error.long_name = 'Wind direction error'
+        # wind_direction_error.units = 'm/s'
+        # scan metadata
+        scan_duration = nc_file.createVariable('scan_duration', 'f', 'time')
+        scan_duration.missing_value = -9999.0
+        scan_duration[:] = [(i[0] - i[1]).total_seconds()
+                            for i in zip(self.etime, self.stime)]
+        scan_duration.long_name = 'PPI scan duration'
+        scan_duration.units = 'second'
+        elevation_angle = nc_file.createVariable('elevation_angle', 'f',
+                                                 'time')
+        elevation_angle.missing_value = -9999.0
+        elevation_angle[:] = self.el
+        elevation_angle.long_name = 'Beam elevation angle'
+        elevation_angle.units = 'degree'
+        nbeams = nc_file.createVariable('nbeams', 'i', 'time')
+        nbeams[:] = self.nbeams
+        nbeams.long_name = ('Number of beams (azimuth angles) in each PPI')
+        nbeams.units = 'unitless'
+        nbeams_used = nc_file.createVariable('nbeams_used', 'i', ('time',
+                                                                  'height'))
+        nbeams_used.missing_value = -9999.0
+        nbeams_used[:, :] = self.nbeams_used
+        nbeams_used.long_name = ('Number of beams (azimuth angles) used in '
+                                 'wind vector estimations')
+        nbeams_used.units = 'unitless'
 
+    def add_attributes(self, nc_file: netCDF4.Dataset):
+        """
+        Add metadata attributes to netCDF
+        """
+        nc_file.input_ppi_min_cnr = self.min_cnr
         # add thresholding vals as attributes, if present
         if self.thresholds:
             for t in self.thresholds:
                 name = "threshold_" + t
                 nc_file.setncattr(name, self.thresholds[t])
-
-        nc_file.close()
