@@ -122,9 +122,24 @@ class ConsensusSet(VADSet):
         # calculate wspd/wdir from averaged u and v
         wspd, wdir = tools.wspd_wdir_from_uv(u_mean, v_mean)
 
-        return cls(vs.alt, vs.lat, vs.lon, vs.height, ranges, u_mean, v_mean,
-                   w_mean, n_u, n_v, n_w, residual, correlation,
-                   mean_cnr, wspd, wdir, window, span)
+        return cls(vs.alt,
+                   vs.lat,
+                   vs.lon,
+                   vs.height,
+                   ranges,
+                   ma.masked_invalid(u_mean),
+                   ma.masked_invalid(v_mean),
+                   ma.masked_invalid(w_mean),
+                   n_u,
+                   n_v,
+                   n_w,
+                   ma.masked_invalid(residual),
+                   ma.masked_invalid(correlation),
+                   ma.masked_invalid(mean_cnr),
+                   ma.masked_invalid(wspd),
+                   ma.masked_invalid(wdir),
+                   window,
+                   span)
 
     def add_aux_variables(self, nc_file: netCDF4.Dataset):
         # number of points used in consensus for uvw
