@@ -408,8 +408,13 @@ class VADSet:
                else f.variables['lat'][:])
         lon = (ma.array(np.nan) if f.variables['lon'][:] is np.ma.masked
                else f.variables['lon'][:])
+        min_cnr = None
+        try:  # accept min_cnr as either an attribute or a variable
+            min_cnr = f.input_ppi_min_cnr
+        except AttributeError:
+            min_cnr = f.variables['snr_threshold']
         return cls(ma.array(f.variables['mean_snr'][:]),
-                   int(f.input_ppi_min_cnr),
+                   min_cnr,
                    alt,
                    lat,
                    lon,
