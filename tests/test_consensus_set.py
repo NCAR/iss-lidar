@@ -64,6 +64,10 @@ def test_median_from_consensus_idxs():
     idxs = [0, 1, 2, 7, 8]
     median = ConsensusSet.median_from_consensus_idxs(vals, idxs)
     assert median == ma.median([1, 2, 3, 2, 1])
+    # if idxs is empty, return nan without producing numpy warning
+    idxs = []
+    median = ConsensusSet.median_from_consensus_idxs(vals, idxs)
+    assert np.isnan(median)
 
 
 def test_write_read_netcdf():

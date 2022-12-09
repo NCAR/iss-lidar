@@ -30,6 +30,9 @@ class ConsensusSet(VADSet):
         Calculate the median of an array from the subset of elements at the
         same indices as were used for consensus averaging for w.
         """
+        # avoid "mean of an empty slice" numpy runtime warning
+        if not idxs:
+            return np.nan
         return ma.median(vals[idxs])
 
     def __init__(self, alt: float, lat: float, lon: float, height: np.array,
