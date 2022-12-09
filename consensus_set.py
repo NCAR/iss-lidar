@@ -113,11 +113,11 @@ class ConsensusSet(VADSet):
                 n_w[idx, hgt] = len(idxs)
                 # take median of idxs used for w to avg res, corr, mean_cnr
                 residual[idx, hgt] = ConsensusSet.\
-                    median_from_consensus_idxs(res_bin, idxs)
+                    median_from_consensus_idxs(res_bin[:, hgt], idxs)
                 correlation[idx, hgt] = ConsensusSet.\
-                    median_from_consensus_idxs(cor_bin, idxs)
+                    median_from_consensus_idxs(cor_bin[:, hgt], idxs)
                 mean_cnr[idx, hgt] = ConsensusSet.\
-                    median_from_consensus_idxs(mc_bin, idxs)
+                    median_from_consensus_idxs(mc_bin[:, hgt], idxs)
 
         # calculate wspd/wdir from averaged u and v
         wspd, wdir = tools.wspd_wdir_from_uv(u_mean, v_mean)
