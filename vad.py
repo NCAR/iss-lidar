@@ -1,6 +1,7 @@
 # pylint: disable=C0103,E1101
 
 import os
+import sys
 import datetime as dt
 import pytz
 import numpy as np
@@ -661,6 +662,7 @@ class VADSet:
         nc_file.Conventions = 'ARM-1.1'
         nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
             '%Y/%m/%d %H:%M:%S UTC')
+        nc_file.command_line = " ".join(sys.argv)
         # add file type specific attributes
         self.add_attributes(nc_file)
 
