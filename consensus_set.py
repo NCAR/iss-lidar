@@ -141,6 +141,50 @@ class ConsensusSet(VADSet):
                    window,
                    span)
 
+    @classmethod
+    def from_file(cls, filename: str):
+        """ Create a ConsensusSet object from a daily consensus netcdf file """
+        f = netCDF4.Dataset(filename, 'r')
+        stime = list(netCDF4.num2date(f.variables['time'][:],
+                                      f.variables['time'].units,
+                                      only_use_python_datetimes=True,
+                                      only_use_cftime_datetimes=False))
+        # reconstitute endtime from scan duration
+        # make dates tz aware
+        stime = [s.replace(tzinfo=pytz.utc) for s in stime]
+        # scalar values with a missing_value get read in as np.ma.MaskedArray
+        # if the single value is not masked, but as np.ma.core.MaskedConstant
+        # if the single value is masked. Instances of MaskedConstant don't
+        # compare well to each other or to other data types, so if the scalar
+        # lat/lon/alt is masked, replace it with a null-dimensioned masked
+        # array with a value of nan.
+        alt = (ma.array(np.nan) if f.variables['alt'][:] is np.ma.masked
+               else f.variables['alt'][:])
+        lat = (ma.array(np.nan) if f.variables['lat'][:] is np.ma.masked
+               else f.variables['lat'][:])
+        lon = (ma.array(np.nan) if f.variables['lon'][:] is np.ma.masked
+               else f.variables['lon'][:])
+        # reconstitute span by finding the difference between subsequent times
+        span = stime[1] - stime[0]
+        return cls(alt,
+                   lat,
+                   lon,
+                   f.variables['height'][:],
+                   stime,
+                   ma.array(f.variables['u'][:]),
+                   ma.array(f.variables['v'][:]),
+                   ma.array(f.variables['w'][:]),
+                   ma.array(f.variables['u_npoints'][:]),
+                   ma.array(f.variables['v_npoints'][:]),
+                   ma.array(f.variables['w_npoints'][:]),
+                   ma.array(f.variables['residual'][:]),
+                   ma.array(f.variables['correlation'][:]),
+                   ma.array(f.variables['mean_snr'][:]),
+                   ma.array(f.variables['wind_speed'][:]),
+                   ma.array(f.variables['wind_direction'][:]),
+                   f.consensus_avg_window,
+                   span)
+
     def add_aux_variables(self, nc_file: netCDF4.Dataset):
         # number of points used in consensus for uvw
         n_u = nc_file.createVariable('u_npoints', 'f', ('time', 'height'))
