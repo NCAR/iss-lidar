@@ -410,9 +410,9 @@ class VADSet:
                else f.variables['lon'][:])
         min_cnr = None
         try:  # accept min_cnr as either an attribute or a variable
-            min_cnr = f.input_ppi_min_cnr
+            min_cnr = int(f.input_ppi_min_cnr)
         except AttributeError:
-            min_cnr = f.variables['snr_threshold']
+            min_cnr = int(f.variables['snr_threshold'])
         return cls(ma.array(f.variables['mean_snr'][:]),
                    min_cnr,
                    alt,
