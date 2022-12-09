@@ -92,9 +92,9 @@ class ConsensusSet(VADSet):
                 residual[idx, :] = np.nan
                 correlation[idx, :] = np.nan
                 mean_cnr[idx, :] = np.nan
-                n_u[idx, :] = np.nan
-                n_v[idx, :] = np.nan
-                n_w[idx, :] = np.nan
+                n_u[idx, :] = 0
+                n_v[idx, :] = 0
+                n_w[idx, :] = 0
                 continue
 
             u_bin = ma.array([vs.u[i] for i in bin_idxs])
