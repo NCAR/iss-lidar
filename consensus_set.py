@@ -182,7 +182,7 @@ class ConsensusSet(VADSet):
                    ma.array(f.variables['mean_snr'][:]),
                    ma.array(f.variables['wind_speed'][:]),
                    ma.array(f.variables['wind_direction'][:]),
-                   f.consensus_avg_window,
+                   int(f.consensus_avg_window),
                    span)
 
     def add_aux_variables(self, nc_file: netCDF4.Dataset):
