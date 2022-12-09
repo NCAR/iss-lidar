@@ -11,7 +11,6 @@
 import argparse
 import numpy as np
 import datetime as dt
-import warnings
 import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
@@ -19,7 +18,6 @@ from vad import VADSet
 from consensus_set import ConsensusSet
 from tools import create_filename
 
-warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
 
 
