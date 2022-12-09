@@ -8,18 +8,15 @@
 # EXAMPLE RUN FROM COMMAND LINE ./vad_to_30min_winds.py 'path_to_VAD_nc_file'
 # 'path_30min_nc_file_dest' 'date'
 
-import os
 import argparse
-import netCDF4
-import pytz
-import datetime as dt
 import numpy as np
+import datetime as dt
 import warnings
 import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from typing import List
 from vad import VADSet
+from consensus_set import ConsensusSet
 from tools import create_filename
 
 warnings.simplefilter("ignore")
@@ -35,17 +32,6 @@ def parse_args():
                         help="create PNG plot w/ same filename as netcdf",
                         dest="plot", default=False, action='store_true')
     return parser.parse_args()
-
-
-def create_time_ranges(day: dt.date) -> List[dt.datetime]:
-    """ Create a list of datetimes every 30 minutes for given day """
-    start = dt.datetime(day.year, day.month, day.day, tzinfo=pytz.UTC)
-    end = start + dt.timedelta(days=1)
-    ranges = []
-    while (start < end):
-        ranges.append(start)
-        start = start + dt.timedelta(minutes=30)
-    return ranges
 
 
 def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
@@ -69,63 +55,16 @@ def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
     plt.close()
 
 
-def write_netcdf(final_path: str, ranges: np.ndarray, vadset: VADSet,
-                 u_mean: np.ndarray, v_mean: np.ndarray, w_mean: np.ndarray,
-                 prefix: str = None):
-    # create netCDF file
-    # create dir if doesn't exist yet
-    filepath = create_filename(ranges[0], final_path, "30min_winds", prefix)
-    if not os.path.exists(os.path.dirname(filepath)):
-        os.makedirs(os.path.dirname(filepath))
-    nc_file = netCDF4.Dataset(filepath, 'w', format='NETCDF4')
-    nc_file.createDimension('time', len(ranges))
-    nc_file.createDimension('height', len(vadset.height))
-    base_time = nc_file.createVariable('base_time', 'i')
-    base_time.units = 'seconds since 1970-01-01 00:00:00 UTC'
-    base_time[:] = netCDF4.date2num(ranges[0], base_time.units)
-    time = nc_file.createVariable('time', 'd', 'time')
-    basetime_string = ranges[0].strftime('%Y-%m-%d %H:%M:%S %Z')
-    time.units = 'seconds since ' + basetime_string
-    time[:] = netCDF4.date2num(ranges, time.units)
-    height = nc_file.createVariable('height', 'f', 'height')
-    height[:] = vadset.height
-    height.long_name = 'Height above instrument level'
-    height.units = 'm'
-    u_var = nc_file.createVariable('u', 'f', ('time', 'height'))
-    u_var.missing_value = -9999
-    u_var[:, :] = u_mean
-    u_var.long_name = 'Eastward component of wind vector'
-    u_var.units = 'm/s'
-    v_var = nc_file.createVariable('v', 'f', ('time', 'height'))
-    v_var.missing_value = -9999
-    v_var[:, :] = v_mean
-    v_var.long_name = 'Northward component of wind vector'
-    v_var.units = 'm/s'
-    w_var = nc_file.createVariable('w', 'f', ('time', 'height'))
-    w_var.missing_value = -9999
-    w_var[:, :] = w_mean
-    w_var.long_name = 'Vertical component of wind vector'
-    w_var.units = 'm/s'
-    lat_var = nc_file.createVariable('lat', 'f')
-    lat_var[:] = vadset.lat
-    lon_var = nc_file.createVariable('lon', 'f')
-    lon_var[:] = vadset.lon
-    alt_var = nc_file.createVariable('alt', 'f')
-    alt_var[:] = vadset.alt
-    nc_file.close()
-
-
 def main():
     args = parse_args()
-    vadset = VADSet.from_file(args.vadfile)
-
-    ranges = create_time_ranges(vadset.stime[0].date())
-
-    u_mean, v_mean, w_mean = vadset.consensus_average(ranges)
+    vs = VADSet.from_file(args.vadfile)
+    cs = ConsensusSet.from_VADSet(vs, 5, dt.timedelta(minutes=30))
 
     if (args.plot):
-        plot(args.destdir, u_mean, v_mean, ranges, vadset.height)
-    write_netcdf(args.destdir, ranges, vadset, u_mean, v_mean, w_mean)
+        plot(args.destdir, cs.u, cs.v, cs.stime, cs.height)
+
+    fpath = create_filename(cs.stime[0], args.destdir, "30min_winds")
+    cs.to_ARM_netcdf(fpath)
 
 
 if __name__ == "__main__":
