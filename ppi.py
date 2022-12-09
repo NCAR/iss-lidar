@@ -13,8 +13,10 @@ class PPI:
                  vr: np.ma.MaskedArray = None,
                  elevation: np.ma.MaskedArray = None,
                  azimuth: np.ma.MaskedArray = None, starttime: datetime = None,
-                 endtime: datetime = None, lat: np.ma.MaskedArray = None,
-                 lon: np.ma.MaskedArray = None, alt: np.ma.MaskedArray = None):
+                 endtime: datetime = None,
+                 lat: np.ma.core.MaskedConstant = None,
+                 lon: np.ma.core.MaskedConstant = None,
+                 alt: np.ma.core.MaskedConstant = None):
         """ Create PPI object from numpy arrays of data"""
         self.cnr = cnr
         self.ranges = ranges
