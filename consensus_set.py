@@ -15,7 +15,9 @@ class ConsensusSet(VADSet):
     @staticmethod
     def create_time_ranges(day: dt.date, size: dt.timedelta
                            ) -> List[dt.datetime]:
-        """ Create a list of datetimes every 30 minutes for given day """
+        """ Create a list of datetimes every given interval for this day """
+        # currently if the interval size is not divisible into 24 hours, the
+        # last time range will extend into the following day
         start = dt.datetime(day.year, day.month, day.day, tzinfo=pytz.UTC)
         end = start + dt.timedelta(days=1)
         ranges = []
