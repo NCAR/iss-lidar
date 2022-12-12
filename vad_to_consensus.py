@@ -2,11 +2,8 @@
 #
 # Created June 2021 Carol Costanza
 #
-# Output 30 minute consensus averaged VAD winds into ARM netCDF format from
-# cfradial format Creates the 12 hour plot and netCDF with 30 minute winds
-#
-# EXAMPLE RUN FROM COMMAND LINE ./vad_to_30min_winds.py 'path_to_VAD_nc_file'
-# 'path_30min_nc_file_dest' 'date'
+# Output consensus averaged VAD winds into ARM netCDF format from
+# ARM netCDF format VADs. Optionally also creates a plot.
 
 import argparse
 import numpy as np
@@ -29,6 +26,8 @@ def parse_args():
     parser.add_argument("--plot",
                         help="create PNG plot w/ same filename as netcdf",
                         dest="plot", default=False, action='store_true')
+    parser.add_argument("--timespan", default=30, type=int, help="Size of time"
+                        " span to average over, in minutes (default 30)")
     return parser.parse_args()
 
 
@@ -36,7 +35,7 @@ def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
          ranges: np.ndarray, heights: np.ndarray):
     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-    fig.suptitle('SWEX 30 minute winds starting at %s 00:00:00 for 24 hours'
+    fig.suptitle('Winds starting at %s 00:00:00 for 24 hours'
                  % (ranges[0].strftime("%Y%m%d")))
     ax.set_ylabel('Height (m)')
     ax.set_xlabel('HH:MM UTC')
@@ -56,12 +55,13 @@ def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
 def main():
     args = parse_args()
     vs = VADSet.from_file(args.vadfile)
-    cs = ConsensusSet.from_VADSet(vs, 5, dt.timedelta(minutes=30))
+    cs = ConsensusSet.from_VADSet(vs, 5, dt.timedelta(minutes=args.timespan))
 
     if (args.plot):
         plot(args.destdir, cs.u, cs.v, cs.stime, cs.height)
 
-    fpath = create_filename(cs.stime[0], args.destdir, "30min_winds")
+    span_descriptor = str(args.timespan) + "min_winds"
+    fpath = create_filename(cs.stime[0], args.destdir, span_descriptor)
     cs.to_ARM_netcdf(fpath)
 
 
