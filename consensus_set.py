@@ -92,9 +92,9 @@ class ConsensusSet(VADSet):
                 residual[idx, :] = np.nan
                 correlation[idx, :] = np.nan
                 mean_cnr[idx, :] = np.nan
-                n_u[idx, :] = 0
-                n_v[idx, :] = 0
-                n_w[idx, :] = 0
+                n_u[idx, :] = np.nan
+                n_v[idx, :] = np.nan
+                n_w[idx, :] = np.nan
                 continue
 
             u_bin = ma.array([vs.u[i] for i in bin_idxs])
@@ -133,9 +133,9 @@ class ConsensusSet(VADSet):
                    ma.masked_invalid(u_mean),
                    ma.masked_invalid(v_mean),
                    ma.masked_invalid(w_mean),
-                   n_u,
-                   n_v,
-                   n_w,
+                   ma.masked_invalid(n_u),
+                   ma.masked_invalid(n_v),
+                   ma.masked_invalid(n_w),
                    ma.masked_invalid(residual),
                    ma.masked_invalid(correlation),
                    ma.masked_invalid(mean_cnr),
