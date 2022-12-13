@@ -496,6 +496,9 @@ class VADSet:
         #     "mean_snr_min": -29.0,
         #     "nbeams_used_min_fraction": 0.5
         # }
+        # note: mean_snr name used here instead of min_cnr so it will match
+        # what is in netcdf input/output. really the quantity is cnr, and in
+        # the VAD objects it's correctly named mean_cnr
         self.thresholds = json.load(open(config, "r"))
 
     @staticmethod
@@ -736,11 +739,14 @@ class VADSet:
         correlation[:, :] = self.correlation
         correlation.long_name = 'Fit correlation coefficient'
         correlation.units = 'unitless'
+        # put mean cnr in file as mean snr to match ARM format (it is still cnr
+        # though)
         mean_snr = nc_file.createVariable('mean_snr', 'f',
                                           ('time', 'height'))
         mean_snr.missing_value = -9999.0
         mean_snr[:, :] = self.mean_cnr
-        mean_snr.long_name = 'Signal to noise ratio averaged over nbeams'
+        mean_snr.long_name = ('Signal to noise ratio averaged over nbeams '
+                              '(derived from CNR)')
         mean_snr.units = 'unitless'
 
     def add_aux_variables(self, nc_file: netCDF4.Dataset):
