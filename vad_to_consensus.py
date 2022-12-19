@@ -47,8 +47,7 @@ def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
     heights = np.repeat([heights], u_mean.shape[0], axis=0)
     ax.barbs(times, heights, u_mean, v_mean,
              barb_increments=dict(half=2.5, full=5, flag=10))
-    plt.savefig('%s/30min_winds_%s.png'
-                % (final_path, ranges[0].strftime("%Y%m%d")))
+    plt.savefig(final_path.replace(".nc", ".png"))
     plt.close()
 
 
@@ -57,11 +56,12 @@ def main():
     vs = VADSet.from_file(args.vadfile)
     cs = ConsensusSet.from_VADSet(vs, 5, dt.timedelta(minutes=args.timespan))
 
-    if (args.plot):
-        plot(args.destdir, cs.u, cs.v, cs.stime, cs.height)
-
     span_descriptor = str(args.timespan) + "min_winds"
     fpath = create_filename(cs.stime[0], args.destdir, span_descriptor)
+
+    if (args.plot):
+        plot(fpath, cs.u, cs.v, cs.stime, cs.height)
+
     cs.to_ARM_netcdf(fpath)
 
 
