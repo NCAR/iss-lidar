@@ -51,13 +51,22 @@ def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
     plt.close()
 
 
+def create_cns_filename(timespan: int, stime: dt.datetime, destdir: str,
+                        prefix: str = None) -> str:
+    """ Create a method for this so I can use it from iss_catalog. Create a
+    string descriptor of the timespan used, then supply it to the general
+    create_filename function. """
+    span_descriptor = str(timespan) + "min_winds"
+    fpath = create_filename(stime, destdir, span_descriptor, prefix)
+    return fpath
+
+
 def main():
     args = parse_args()
     vs = VADSet.from_file(args.vadfile)
     cs = ConsensusSet.from_VADSet(vs, 5, dt.timedelta(minutes=args.timespan))
 
-    span_descriptor = str(args.timespan) + "min_winds"
-    fpath = create_filename(cs.stime[0], args.destdir, span_descriptor)
+    fpath = create_cns_filename(args.timespan, cs.stime[0], args.destdir)
 
     if (args.plot):
         plot(fpath, cs.u, cs.v, cs.stime, cs.height)
