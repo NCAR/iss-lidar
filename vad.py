@@ -353,6 +353,11 @@ class VADSet:
 
     @classmethod
     def from_VADs(cls, vads: List[VAD], min_cnr: int):
+        # avoid using the heights from a VAD with bad heights
+        i = 0
+        while (vads[i].z[0] == 0 and i < len(vads)):
+            i += 1
+        z = vads[i].z
         return cls(ma.array([i.mean_cnr for i in vads]),
                    min_cnr,
                    # use any vad for location, presumably it doesn't change
@@ -361,7 +366,7 @@ class VADSet:
                    vads[0].lon,
                    # currently we assume that heights are the same for all VAD
                    # in a set
-                   vads[0].z,
+                   z,
                    # lists of datetime objects, tz-aware
                    [i.stime for i in vads],
                    [i.etime for i in vads],
@@ -437,7 +442,7 @@ class VADSet:
                    ma.array(f.variables['correlation'][:]))
 
     @classmethod
-    def from_PPIs(cls, ppi_files: List[PPI], min_cnr: int):
+    def from_PPIs(cls, ppi_files: List[str], min_cnr: int):
         """ Create a VADSet object by performing VAD calculation on each of a
         list of PPI files """
         vads = []
@@ -452,7 +457,6 @@ class VADSet:
             # generate VAD for this timestep
             vad = VAD.calculate_ARM_VAD(ppi)
             vads.append(vad)
-
         if not vads:
             # didn't successfully create any vads. can't continue processing.
             return
