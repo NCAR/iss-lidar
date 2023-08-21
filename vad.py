@@ -452,6 +452,9 @@ class VADSet:
             # for low elevation angles, VAD output isn't very helpful
             if ppi.elevation < 6:
                 continue
+            # need at least 3 different azimuths to calculate VAD winds
+            if len(ppi.azimuth) < 3:
+                continue
             ppi.threshold_cnr(min_cnr)
 
             # generate VAD for this timestep
