@@ -761,28 +761,30 @@ class VADSet:
         Add auxiliary variables (generally metadata, that are different between
         VADSet and ConsensusSet)
         """
+        # Currently not used because values are incorrect
+        # Need to relook at the equations in calcA() 
         # uvw errors
-        u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
-        u_error.missing_value = -9999.0
-        u_error[:, :] = self.du
-        u_error.long_name = ('Sampling uncertainty in eastward component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        u_error.units = 'm/s'
-        v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
-        v_error.missing_value = -9999.0
-        v_error[:, :] = self.dv
-        v_error.long_name = ('Sampling uncertainty in northward component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        v_error.units = 'm/s'
-        w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
-        w_error.missing_value = -9999.0
-        w_error[:, :] = self.dw
-        w_error.long_name = ('Sampling uncertainty in vertical component of'
-                             ' wind due to azimuths used assuming 1 m/s'
-                             ' error in radial velocities')
-        w_error.units = 'm/s'
+        #u_error = nc_file.createVariable('u_error', 'f', ('time', 'height'))
+        #u_error.missing_value = -9999.0
+        #u_error[:, :] = self.du
+        #u_error.long_name = ('Sampling uncertainty in eastward component of'
+        #                     ' wind due to azimuths used assuming 1 m/s'
+        #                     ' error in radial velocities')
+        #u_error.units = 'm/s'
+        #v_error = nc_file.createVariable('v_error', 'f', ('time', 'height'))
+        #v_error.missing_value = -9999.0
+        #v_error[:, :] = self.dv
+        #v_error.long_name = ('Sampling uncertainty in northward component of'
+        #                     ' wind due to azimuths used assuming 1 m/s'
+        #                     ' error in radial velocities')
+        #v_error.units = 'm/s'
+        #w_error = nc_file.createVariable('w_error', 'f', ('time', 'height'))
+        #w_error.missing_value = -9999.0
+        #w_error[:, :] = self.dw
+        #w_error.long_name = ('Sampling uncertainty in vertical component of'
+        #                     ' wind due to azimuths used assuming 1 m/s'
+        #                     ' error in radial velocities')
+        #w_error.units = 'm/s'
         # wspd/wdir errors (not currently used)
         # wind_speed_error = nc_file.createVariable('wind_speed_error', 'f',
         #                                           ('time', 'height'))
