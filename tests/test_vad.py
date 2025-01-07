@@ -6,8 +6,8 @@ import numpy.ma as ma
 import numpy.testing
 from pathlib import Path
 
-from ppi import PPI
-from vad import VAD, VADSet
+from iss_lidar.ppi import PPI
+from iss_lidar.vad import VAD, VADSet
 
 datadir = Path(__file__).parent.parent.joinpath("testdata")
 

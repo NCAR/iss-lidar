@@ -3,8 +3,8 @@ import pytz
 import numpy as np
 import numpy.ma as ma
 from pathlib import Path
-from consensus_set import ConsensusSet
-from vad import VADSet
+from iss_lidar.consensus_set import ConsensusSet
+from iss_lidar.vad import VADSet
 
 datadir = Path(__file__).parent.parent.joinpath("testdata")
 

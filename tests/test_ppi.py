@@ -1,5 +1,5 @@
 import numpy.ma as ma
-from ppi import PPI
+from iss_lidar.ppi import PPI
 
 
 def test_threshold_cnr():

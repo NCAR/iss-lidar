@@ -11,9 +11,9 @@ import datetime as dt
 import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from vad import VADSet
-from consensus_set import ConsensusSet
-from tools import create_filename
+from .vad import VADSet
+from .consensus_set import ConsensusSet
+from .tools import create_filename
 
 np.set_printoptions(threshold=np.inf)
 

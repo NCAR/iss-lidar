@@ -1,7 +1,7 @@
 from datetime import datetime
 import numpy as np
 
-from tools import create_filename, wspd_wdir_from_uv
+from iss_lidar.tools import create_filename, wspd_wdir_from_uv
 
 
 def test_create_filename():

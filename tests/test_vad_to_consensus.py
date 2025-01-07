@@ -1,5 +1,5 @@
 from datetime import datetime
-from vad_to_consensus import create_cns_filename
+from iss_lidar.vad_to_consensus import create_cns_filename
 
 
 def test_create_cns_filename():

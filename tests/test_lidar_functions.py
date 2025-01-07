@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.ma as ma
-from Lidar_functions import consensus_avg
+from iss_lidar.Lidar_functions import consensus_avg
 
 
 def test_consensus_avg():

@@ -5,9 +5,9 @@ import pytz
 from typing import List
 import netCDF4
 
-import tools
-from vad import VADSet
-from Lidar_functions import consensus_avg
+import iss_lidar.tools as tools
+from .vad import VADSet
+from .Lidar_functions import consensus_avg
 
 
 class ConsensusSet(VADSet):

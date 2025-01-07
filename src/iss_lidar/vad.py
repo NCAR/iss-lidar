@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 from typing import Tuple, List
 import json
 
-import Lidar_functions
-import tools
-from ppi import PPI
+import iss_lidar.Lidar_functions as Lidar_functions
+import iss_lidar.tools as tools
+from .ppi import PPI
 
 
 class VAD:

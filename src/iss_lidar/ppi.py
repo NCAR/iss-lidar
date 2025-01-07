@@ -3,7 +3,7 @@
 import numpy as np
 import numpy.ma as ma
 from datetime import datetime
-from tools import read_cfradial
+from .tools import read_cfradial
 
 
 class PPI:
