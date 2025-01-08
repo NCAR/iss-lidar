@@ -2,3 +2,4 @@ __pycache__
 *.pyc
 testdata/test_*.nc
 *.egg-info
+dist/
