@@ -19,7 +19,7 @@ def assert_allclose(actual, desired, rtol=1e-06, atol=1e-05,
                                   equal_nan, err_msg, verbose)
 
 
-def compare_vadsets(a: VADSet, b: VADSet):
+def compare_vadsets(a: VADSet, b: VADSet, compare_errors=True):
     """ Compare data from two VADSet objects, allowing for small differences
     from saving/reading files, etc"""
     assert a.min_cnr == b.min_cnr
@@ -45,16 +45,19 @@ def compare_vadsets(a: VADSet, b: VADSet):
     assert isinstance(b.nbeams, numpy.ma.MaskedArray)
     assert_allclose(a.u, b.u, equal_nan=True)
     assert isinstance(b.u, numpy.ndarray)
-    assert_allclose(a.du, b.du, equal_nan=True)
-    assert isinstance(b.du, numpy.ndarray)
+    if compare_errors:
+        assert_allclose(a.du, b.du, equal_nan=True)
+        assert isinstance(b.du, numpy.ndarray)
     assert_allclose(a.w, b.w, equal_nan=True)
     assert isinstance(b.w, numpy.ndarray)
-    assert_allclose(a.dw, b.dw, equal_nan=True)
-    assert isinstance(b.dw, numpy.ndarray)
+    if compare_errors:
+        assert_allclose(a.dw, b.dw, equal_nan=True)
+        assert isinstance(b.dw, numpy.ndarray)
     assert_allclose(a.v, b.v, equal_nan=True)
     assert isinstance(b.v, numpy.ndarray)
-    assert_allclose(a.dv, b.dv, equal_nan=True)
-    assert isinstance(b.dv, numpy.ndarray)
+    if compare_errors:
+        assert_allclose(a.dv, b.dv, equal_nan=True)
+        assert isinstance(b.dv, numpy.ndarray)
     assert_allclose(a.speed, b.speed, equal_nan=True)
     assert isinstance(b.speed, numpy.ndarray)
     assert_allclose(a.wdir, b.wdir, equal_nan=True)
@@ -202,7 +205,8 @@ def test_vadset_netcdf(ppis):
     vs.to_ARM_netcdf(f"{datadir}/test_vadset.nc")
     f = VADSet.from_file(f"{datadir}/test_vadset.nc")
     # vadset from file should match original vadset
-    compare_vadsets(vs, f)
+    # skip comparing du,dv,dw which are not saved to netcdf currently
+    compare_vadsets(vs, f, compare_errors=False)
 
 
 def test_vadset_from_PPIs(ppis):
