@@ -419,6 +419,16 @@ class VADSet:
             min_cnr = int(f.input_ppi_min_cnr)
         except AttributeError:
             min_cnr = f.variables['snr_threshold'][:]
+        # create blank du, dv, dw if not present in netcdf
+        du = np.full(f.variables['u'][:].shape, np.nan)
+        dv = np.full(f.variables['v'][:].shape, np.nan)
+        dw = np.full(f.variables['w'][:].shape, np.nan)
+        try:
+            du = f.variables['u_error'][:]
+            dv = f.variables['v_error'][:]
+            dw = f.variables['w_error'][:]
+        except KeyError:
+            pass
         return cls(ma.array(f.variables['mean_snr'][:]),
                    min_cnr,
                    alt,
@@ -430,11 +440,11 @@ class VADSet:
                    ma.array(f.variables['elevation_angle'][:]),
                    ma.array(f.variables['nbeams'][:]),
                    ma.array(f.variables['u'][:]),
-                   ma.array(f.variables['u_error'][:]),
+                   ma.array(du),
                    ma.array(f.variables['v'][:]),
-                   ma.array(f.variables['v_error'][:]),
+                   ma.array(dv),
                    ma.array(f.variables['w'][:]),
-                   ma.array(f.variables['w_error'][:]),
+                   ma.array(dw),
                    ma.array(f.variables['nbeams_used'][:]),
                    ma.array(f.variables['wind_speed'][:]),
                    ma.array(f.variables['wind_direction'][:]),
