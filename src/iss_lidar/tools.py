@@ -6,8 +6,9 @@ import pytz
 from datetime import datetime
 import numpy as np
 from typing import Tuple
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm
 
 
 def create_filename(date: datetime, destdir: str, filetype: str,
@@ -57,8 +58,8 @@ def wspd_wdir_from_uv(u: np.ndarray,
 
 def time_height_plot(filepath: str, u_mean: np.ndarray, v_mean: np.ndarray,
                      ranges: np.ndarray, heights: np.ndarray):
-    ticklabels = matplotlib.dates.DateFormatter("%H:%M")
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    ticklabels = mpl.dates.DateFormatter("%H:%M")
+    fig, ax = plt.subplots(layout='constrained', figsize=(10, 8))
     fig.suptitle('Winds starting at %s 00:00:00 for 24 hours'
                  % (ranges[0].strftime("%Y%m%d")))
     ax.set_ylabel('Height (m)')
@@ -69,7 +70,15 @@ def time_height_plot(filepath: str, u_mean: np.ndarray, v_mean: np.ndarray,
     times = np.repeat([np.array(ranges)],
                       u_mean.shape[-1], axis=0).swapaxes(1, 0)
     heights = np.repeat([heights], u_mean.shape[0], axis=0)
-    ax.barbs(times, heights, u_mean, v_mean,
-             barb_increments=dict(half=2.5, full=5, flag=10))
+    # colorbar setup
+    cmap = plt.cm.gist_rainbow_r
+    norm = BoundaryNorm(list(range(0, 24, 2)), cmap.N)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax,
+                 orientation='vertical', label='wind speed (m/s)')
+    # calculate spd from u/v for barb color
+    spd, _ = wspd_wdir_from_uv(u_mean, v_mean)
+    ax.barbs(times, heights, u_mean, v_mean, spd,
+             barb_increments=dict(half=2.5, full=5, flag=10), cmap=cmap,
+             norm=norm)
     plt.savefig(filepath)
     plt.close()
