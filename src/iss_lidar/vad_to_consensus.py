@@ -8,12 +8,10 @@
 import argparse
 import numpy as np
 import datetime as dt
-import matplotlib
-# matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from .vad import VADSet
-from .consensus_set import ConsensusSet
-from .tools import create_filename
+from iss_lidar.vad import VADSet
+from iss_lidar.consensus_set import ConsensusSet
+from iss_lidar.tools import create_filename
+from iss_lidar.tools import time_height_plot
 
 np.set_printoptions(threshold=np.inf)
 
@@ -31,24 +29,24 @@ def parse_args():
     return parser.parse_args()
 
 
-def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
-         ranges: np.ndarray, heights: np.ndarray):
-    ticklabels = matplotlib.dates.DateFormatter("%H:%M")
-    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-    fig.suptitle('Winds starting at %s 00:00:00 for 24 hours'
-                 % (ranges[0].strftime("%Y%m%d")))
-    ax.set_ylabel('Height (m)')
-    ax.set_xlabel('HH:MM UTC')
-    ax.set_ylim(0, 1500)
-    ax.xaxis.set_major_formatter(ticklabels)
-    # make times and heights 2d arrays
-    times = np.repeat([np.array(ranges)],
-                      u_mean.shape[-1], axis=0).swapaxes(1, 0)
-    heights = np.repeat([heights], u_mean.shape[0], axis=0)
-    ax.barbs(times, heights, u_mean, v_mean,
-             barb_increments=dict(half=2.5, full=5, flag=10))
-    plt.savefig(final_path.replace(".nc", ".png"))
-    plt.close()
+# def plot(final_path: str, u_mean: np.ndarray, v_mean: np.ndarray,
+#          ranges: np.ndarray, heights: np.ndarray):
+#     ticklabels = matplotlib.dates.DateFormatter("%H:%M")
+#     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+#     fig.suptitle('Winds starting at %s 00:00:00 for 24 hours'
+#                  % (ranges[0].strftime("%Y%m%d")))
+#     ax.set_ylabel('Height (m)')
+#     ax.set_xlabel('HH:MM UTC')
+#     ax.set_ylim(0, 1500)
+#     ax.xaxis.set_major_formatter(ticklabels)
+#     # make times and heights 2d arrays
+#     times = np.repeat([np.array(ranges)],
+#                       u_mean.shape[-1], axis=0).swapaxes(1, 0)
+#     heights = np.repeat([heights], u_mean.shape[0], axis=0)
+#     ax.barbs(times, heights, u_mean, v_mean,
+#              barb_increments=dict(half=2.5, full=5, flag=10))
+#     plt.savefig(final_path.replace(".nc", ".png"))
+#     plt.close()
 
 
 def create_cns_filename(timespan: int, stime: dt.datetime, destdir: str,
@@ -69,7 +67,7 @@ def main():
     fpath = create_cns_filename(args.timespan, cs.stime[0], args.destdir)
 
     if (args.plot):
-        plot(fpath, cs.u, cs.v, cs.stime, cs.height)
+        time_height_plot(fpath.replace(".nc", ".png"), cs.u, cs.v, cs.stime, cs.height)
 
     cs.to_ARM_netcdf(fpath)
 

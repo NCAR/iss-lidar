@@ -13,7 +13,7 @@ import json
 
 import iss_lidar.Lidar_functions as Lidar_functions
 import iss_lidar.tools as tools
-from .ppi import PPI
+from iss_lidar.ppi import PPI
 
 
 class VAD:

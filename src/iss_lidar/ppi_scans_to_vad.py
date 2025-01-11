@@ -14,6 +14,7 @@ import argparse
 import numpy as np
 from vad import VADSet
 from tools import create_filename
+from tools import time_height_plot
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
@@ -26,6 +27,9 @@ def create_parser():
                         " cnr below this value")
     parser.add_argument("--threshold_config", default=None, help="path to "
                         "config file of post-VAD thresholding parameters")
+    parser.add_argument("--plot",
+                        help="create PNG plot w/ same filename as netcdf",
+                        dest="plot", default=False, action='store_true')
     parser.add_argument("destdir", help="directory to save VAD files to")
     parser.add_argument("ppifiles", help="ppi file(s) for input", nargs='+')
     return parser.parse_args()
@@ -50,11 +54,17 @@ def main():
     if len(args.ppifiles) == 1:
         ppi_scans = select_files(args.ppifiles[0])
     vadset = VADSet.from_PPIs(ppi_scans, args.min_cnr)
-    if(args.threshold_config):
+    if (args.threshold_config):
         # apply thresholds if a config is present
         vadset.load_thresholds(args.threshold_config)
         vadset.apply_thresholds()
     save(vadset, args.destdir)
+
+    if (args.plot):
+        plotpath = create_filename(vadset.stime[0], args.destdir,
+                                   "VAD").replace(".nc", ".png")
+        time_height_plot(plotpath, vadset.u, vadset.v, vadset.stime,
+                         vadset.height)
 
 
 if __name__ == "__main__":

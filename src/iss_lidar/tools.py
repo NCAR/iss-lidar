@@ -6,6 +6,8 @@ import pytz
 from datetime import datetime
 import numpy as np
 from typing import Tuple
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 def create_filename(date: datetime, destdir: str, filetype: str,
@@ -51,3 +53,23 @@ def wspd_wdir_from_uv(u: np.ndarray,
     notnan = ~np.isnan(wdir)
     wdir[notnan] %= 360
     return speed, wdir
+
+
+def time_height_plot(filepath: str, u_mean: np.ndarray, v_mean: np.ndarray,
+                     ranges: np.ndarray, heights: np.ndarray):
+    ticklabels = matplotlib.dates.DateFormatter("%H:%M")
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    fig.suptitle('Winds starting at %s 00:00:00 for 24 hours'
+                 % (ranges[0].strftime("%Y%m%d")))
+    ax.set_ylabel('Height (m)')
+    ax.set_xlabel('HH:MM UTC')
+    ax.set_ylim(0, 1500)
+    ax.xaxis.set_major_formatter(ticklabels)
+    # make times and heights 2d arrays
+    times = np.repeat([np.array(ranges)],
+                      u_mean.shape[-1], axis=0).swapaxes(1, 0)
+    heights = np.repeat([heights], u_mean.shape[0], axis=0)
+    ax.barbs(times, heights, u_mean, v_mean,
+             barb_increments=dict(half=2.5, full=5, flag=10))
+    plt.savefig(filepath)
+    plt.close()
