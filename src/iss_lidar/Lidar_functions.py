@@ -1,4 +1,3 @@
-#!/opt/local/anaconda3/bin/python
 # -*- coding: utf-8 -*-
 # pylint: disable=C0103,E1101
 """

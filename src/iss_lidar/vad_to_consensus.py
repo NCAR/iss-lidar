@@ -1,5 +1,3 @@
-#!/opt/local/anaconda3/bin/python
-#
 # Created June 2021 Carol Costanza
 #
 # Output consensus averaged VAD winds into ARM netCDF format from
