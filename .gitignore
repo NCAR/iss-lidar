@@ -3,3 +3,4 @@ __pycache__
 testdata/test_*.nc
 *.egg-info
 dist/
+build/
