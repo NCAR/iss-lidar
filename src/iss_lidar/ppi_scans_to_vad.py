@@ -11,9 +11,9 @@ import warnings
 import glob
 import argparse
 import numpy as np
-from vad import VADSet
-from tools import create_filename
-from tools import time_height_plot
+from iss_lidar.vad import VADSet
+from iss_lidar.tools import create_filename
+from iss_lidar.tools import time_height_plot
 
 warnings.simplefilter("ignore")
 np.set_printoptions(threshold=np.inf)
