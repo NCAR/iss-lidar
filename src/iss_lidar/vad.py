@@ -371,7 +371,7 @@ class VADSet:
                    [i.stime for i in vads],
                    [i.etime for i in vads],
                    # data from VAD objects
-                   [i.el for i in vads],
+                   ma.array([i.el for i in vads]),
                    ma.array([i.nbeams for i in vads]),
                    ma.array([i.u for i in vads]),
                    ma.array([i.du for i in vads]),
