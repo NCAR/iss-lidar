@@ -19,12 +19,25 @@ def create_filename(date: datetime, destdir: str, filetype: str,
     fname += date.strftime('%Y%m%d') + '.nc'
     return os.path.join(destdir, fname)
 
+def read_cfradial(file_path: str):
+    lidar_file = netCDF4.Dataset(file_path, 'r')
+    # cfradial1 files:
+    # - Conventions = "CF-1.7"
+    # - version = "CF-Radial 2.0 , CF-1.7"
+    # cfradial2 files:
+    # - Conventions = "Cf/Radial"
+    # - version = "2.0"
+    if lidar_file.Conventions == "CF-1.7":
+        return read_cfradial1(lidar_file)
+    elif lidar_file.Conventions == "Cf/Radial" and lidar_file.version == "2.0":
+        return read_cfradial2(lidar_file)
+    else:
+        raise ValueError("Unsupported netCDF conventions: {}".format(lidar_file.Conventions))
 
-def read_cfradial(file_path):
+def read_cfradial1(lidar_file: netCDF4.Dataset):
     """
     This function reads in cfradial files to variables needed for VAD analysis
     """
-    lidar_file = netCDF4.Dataset(file_path, 'r')
     cnr = lidar_file.variables['cnr'][:]
     ranges = lidar_file.variables['range'][:]
     vr = lidar_file.variables['radial_wind_speed'][:]
@@ -37,6 +50,34 @@ def read_cfradial(file_path):
     # times in cfradial files are in UTC. timezone is not specified in
     # start_time attribute, but is specified as 'Z' instead of 'UTC' in
     # start_datetime attribute, which datetime won't parse.
+    start = datetime.strptime(lidar_file.start_time,
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+    end = datetime.strptime(lidar_file.end_time,
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+
+    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
+            longitude, altitude]
+
+
+def read_cfradial2(lidar_file: netCDF4.Dataset):
+    """
+    This function reads in PPI data for VAD analysisfrom cfradial2 format files.
+    """
+    # use first sweep group on the assumption that there's only one per file
+    sweep_group_name = lidar_file.variables['sweep_group_name'][0]
+    sweep_group = lidar_file.groups[sweep_group_name]
+
+    cnr = sweep_group.variables['cnr'][:]
+    ranges = sweep_group.variables['range'][:]
+    vr = sweep_group.variables['radial_wind_speed'][:]
+    azimuth = sweep_group.variables['azimuth'][:]
+    elevation = sweep_group.variables['elevation'][0]
+
+    # location is in root group
+    latitude = lidar_file.variables['latitude'][:]
+    longitude = lidar_file.variables['longitude'][:]
+    altitude = lidar_file.variables['altitude'][:]
+
     start = datetime.strptime(lidar_file.start_time,
                               "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
     end = datetime.strptime(lidar_file.end_time,
