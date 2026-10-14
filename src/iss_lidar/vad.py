@@ -680,7 +680,7 @@ class VADSet:
 
         # add basic attributes for all file types
         nc_file.Conventions = 'ARM-1.1'
-        nc_file.history = 'created on ' + dt.datetime.utcnow().strftime(
+        nc_file.history = 'created on ' + dt.datetime.now(tz=dt.UTC).strftime(
             '%Y/%m/%d %H:%M:%S UTC')
         nc_file.command_line = " ".join(sys.argv)
         # add file type specific attributes
