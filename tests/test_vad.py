@@ -422,6 +422,14 @@ def test_thresholds_in_netcdf():
     assert attrs["threshold_correlation_min"] == 0.9
     assert attrs["threshold_residual_max"] == 0.7
     assert attrs["threshold_mean_snr_min"] == -29.0
+
+
+def test_cfradial1_vs_cfradial2():
+    """ Make sure cfradial1 and 2 generate the same VAD results """
+    vs1 = VADSet.from_PPIs([f"{datadir}/cfrad.20260915_014052_WLS200s-181_185_PPI_50m.nc"], -22)
+    vs2 = VADSet.from_PPIs([f"{datadir}/cfrad2.20260915_014052_WLS200s-181_ppi_PPI.nc"], -22)
+    compare_vadsets(vs1, vs2, compare_errors=False)
+
 # updating tests example:
 # d = {"du": vad.du.tolist(), "dv": vad.dv.tolist(), "dw": vad.dw.tolist()}
 # f = open("testdata/vad/wind_errors.json", "w")
