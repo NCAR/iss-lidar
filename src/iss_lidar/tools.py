@@ -27,7 +27,8 @@ def read_cfradial(file_path: str):
     # cfradial2 files:
     # - Conventions = "Cf/Radial"
     # - version = "2.0"
-    if lidar_file.Conventions == "CF-1.7":
+    if all(name in lidar_file.variables for name in
+           ('cnr', 'range', 'radial_wind_speed', 'azimuth', 'elevation')):
         return read_cfradial1(lidar_file)
     elif lidar_file.Conventions == "Cf/Radial" and lidar_file.version == "2.0":
         return read_cfradial2(lidar_file)
