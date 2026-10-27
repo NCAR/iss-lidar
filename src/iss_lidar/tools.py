@@ -63,8 +63,10 @@ def read_cfradial2(lidar_file: netCDF4.Dataset):
     """
     This function reads in PPI data for VAD analysisfrom cfradial2 format files.
     """
-    # use first sweep group on the assumption that there's only one per file
-    sweep_group_name = lidar_file.variables['sweep_group_name'][0]
+    sweep_group_names = lidar_file.variables['sweep_group_name']
+    if len(sweep_group_names) != 1:
+        raise ValueError("Expected exactly one sweep in a CF-Radial 2 file")
+    sweep_group_name = sweep_group_names[0]
     sweep_group = lidar_file.groups[sweep_group_name]
 
     cnr = sweep_group.variables['cnr'][:]
