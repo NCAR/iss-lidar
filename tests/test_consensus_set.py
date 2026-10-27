@@ -1,5 +1,4 @@
 import datetime as dt
-import pytz
 import numpy as np
 import numpy.ma as ma
 from pathlib import Path
@@ -55,14 +54,14 @@ def test_create_time_ranges():
     day = dt.date(2021, 6, 30)
     res = ConsensusSet.create_time_ranges(day, dt.timedelta(minutes=30))
     assert len(res) == 48
-    assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, pytz.UTC)
-    assert res[-1] == dt.datetime(2021, 6, 30, 23, 30, 00, 00, pytz.UTC)
+    assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, dt.UTC)
+    assert res[-1] == dt.datetime(2021, 6, 30, 23, 30, 00, 00, dt.UTC)
     # try hour bins
     res = ConsensusSet.create_time_ranges(day, dt.timedelta(minutes=60))
     assert len(res) == 24
-    assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, pytz.UTC)
-    assert res[1] == dt.datetime(2021, 6, 30, 1, 00, 00, 00, pytz.UTC)
-    assert res[-1] == dt.datetime(2021, 6, 30, 23, 00, 00, 00, pytz.UTC)
+    assert res[0] == dt.datetime(2021, 6, 30, 00, 00, 00, 00, dt.UTC)
+    assert res[1] == dt.datetime(2021, 6, 30, 1, 00, 00, 00, dt.UTC)
+    assert res[-1] == dt.datetime(2021, 6, 30, 23, 00, 00, 00, dt.UTC)
 
 
 def test_median_from_consensus_idxs():

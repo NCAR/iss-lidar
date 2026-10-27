@@ -3,7 +3,6 @@
 import os
 import sys
 import datetime as dt
-import pytz
 import numpy as np
 import numpy.ma as ma
 import netCDF4
@@ -400,8 +399,8 @@ class VADSet:
                                       only_use_python_datetimes=True,
                                       only_use_cftime_datetimes=False))
         # make dates tz aware
-        stime = [s.replace(tzinfo=pytz.utc) for s in stime]
-        etime = [e.replace(tzinfo=pytz.utc) for e in etime]
+        stime = [s.replace(tzinfo=dt.UTC) for s in stime]
+        etime = [e.replace(tzinfo=dt.UTC) for e in etime]
         # scalar values with a missing_value get read in as np.ma.MaskedArray
         # if the single value is not masked, but as np.ma.core.MaskedConstant
         # if the single value is masked. Instances of MaskedConstant don't

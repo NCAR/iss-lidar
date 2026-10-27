@@ -2,9 +2,9 @@
 
 import os
 import netCDF4
-import pytz
 from datetime import datetime
 import numpy as np
+import datetime as dt
 from typing import Tuple
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -51,9 +51,9 @@ def read_cfradial1(lidar_file: netCDF4.Dataset):
     # start_time attribute, but is specified as 'Z' instead of 'UTC' in
     # start_datetime attribute, which datetime won't parse.
     start = datetime.strptime(lidar_file.start_time,
-                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
     end = datetime.strptime(lidar_file.end_time,
-                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
 
     return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
             longitude, altitude]
@@ -81,9 +81,9 @@ def read_cfradial2(lidar_file: netCDF4.Dataset):
     altitude = lidar_file.variables['altitude'][:]
 
     start = datetime.strptime(lidar_file.start_time,
-                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
     end = datetime.strptime(lidar_file.end_time,
-                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
 
     return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
             longitude, altitude]
