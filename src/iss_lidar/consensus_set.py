@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.ma as ma
 import datetime as dt
-import pytz
 from typing import List
 import netCDF4
 
@@ -18,7 +17,7 @@ class ConsensusSet(VADSet):
         """ Create a list of datetimes every given interval for this day """
         # currently if the interval size is not divisible into 24 hours, the
         # last time range will extend into the following day
-        start = dt.datetime(day.year, day.month, day.day, tzinfo=pytz.UTC)
+        start = dt.datetime(day.year, day.month, day.day, tzinfo=dt.UTC)
         end = start + dt.timedelta(days=1)
         ranges = []
         while (start < end):
@@ -156,7 +155,7 @@ class ConsensusSet(VADSet):
                                       only_use_cftime_datetimes=False))
         # reconstitute endtime from scan duration
         # make dates tz aware
-        stime = [s.replace(tzinfo=pytz.utc) for s in stime]
+        stime = [s.replace(tzinfo=dt.UTC) for s in stime]
         # scalar values with a missing_value get read in as np.ma.MaskedArray
         # if the single value is not masked, but as np.ma.core.MaskedConstant
         # if the single value is masked. Instances of MaskedConstant don't

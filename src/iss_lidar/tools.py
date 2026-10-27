@@ -2,9 +2,9 @@
 
 import os
 import netCDF4
-import pytz
 from datetime import datetime
 import numpy as np
+import datetime as dt
 from typing import Tuple
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -19,12 +19,26 @@ def create_filename(date: datetime, destdir: str, filetype: str,
     fname += date.strftime('%Y%m%d') + '.nc'
     return os.path.join(destdir, fname)
 
+def read_cfradial(file_path: str):
+    lidar_file = netCDF4.Dataset(file_path, 'r')
+    # cfradial1 files:
+    # - Conventions = "CF-1.7"
+    # - version = "CF-Radial 2.0 , CF-1.7"
+    # cfradial2 files:
+    # - Conventions = "Cf/Radial"
+    # - version = "2.0"
+    if all(name in lidar_file.variables for name in
+           ('cnr', 'range', 'radial_wind_speed', 'azimuth', 'elevation')):
+        return read_cfradial1(lidar_file)
+    elif lidar_file.Conventions == "Cf/Radial" and lidar_file.version == "2.0":
+        return read_cfradial2(lidar_file)
+    else:
+        raise ValueError("Unsupported netCDF conventions: {}".format(lidar_file.Conventions))
 
-def read_cfradial(file_path):
+def read_cfradial1(lidar_file: netCDF4.Dataset):
     """
     This function reads in cfradial files to variables needed for VAD analysis
     """
-    lidar_file = netCDF4.Dataset(file_path, 'r')
     cnr = lidar_file.variables['cnr'][:]
     ranges = lidar_file.variables['range'][:]
     vr = lidar_file.variables['radial_wind_speed'][:]
@@ -38,9 +52,39 @@ def read_cfradial(file_path):
     # start_time attribute, but is specified as 'Z' instead of 'UTC' in
     # start_datetime attribute, which datetime won't parse.
     start = datetime.strptime(lidar_file.start_time,
-                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
     end = datetime.strptime(lidar_file.end_time,
-                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=pytz.utc)
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
+
+    return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
+            longitude, altitude]
+
+
+def read_cfradial2(lidar_file: netCDF4.Dataset):
+    """
+    This function reads in PPI data for VAD analysisfrom cfradial2 format files.
+    """
+    sweep_group_names = lidar_file.variables['sweep_group_name']
+    if len(sweep_group_names) != 1:
+        raise ValueError("Expected exactly one sweep in a CF-Radial 2 file")
+    sweep_group_name = sweep_group_names[0]
+    sweep_group = lidar_file.groups[sweep_group_name]
+
+    cnr = sweep_group.variables['cnr'][:]
+    ranges = sweep_group.variables['range'][:]
+    vr = sweep_group.variables['radial_wind_speed'][:]
+    azimuth = sweep_group.variables['azimuth'][:]
+    elevation = sweep_group.variables['elevation'][0]
+
+    # location is in root group
+    latitude = lidar_file.variables['latitude'][:]
+    longitude = lidar_file.variables['longitude'][:]
+    altitude = lidar_file.variables['altitude'][:]
+
+    start = datetime.strptime(lidar_file.start_time,
+                              "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
+    end = datetime.strptime(lidar_file.end_time,
+                            "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=dt.UTC)
 
     return [cnr, ranges, vr, elevation, azimuth, start, end, latitude,
             longitude, altitude]
