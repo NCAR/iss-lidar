@@ -24,6 +24,7 @@ dependencies = [
     "netCDF4",
     "numpy",
     "scipy",
+    "xradar>=0.13.0"
 ]
 
 [project.urls]
@@ -33,3 +34,4 @@ Issues = "https://github.com/NCAR/iss-lidar/issues"
 [project.scripts]
 ppi_scans_to_vad = "iss_lidar.ppi_scans_to_vad:main"
 vad_to_consensus = "iss_lidar.vad_to_consensus:main"
+halo_to_cfrad = "iss_lidar.halo_to_cfrad:main"

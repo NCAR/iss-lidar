@@ -5,7 +5,8 @@ import netCDF4
 from datetime import datetime
 import numpy as np
 import datetime as dt
-from typing import Tuple
+from typing import List, Tuple
+import glob
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm
@@ -126,3 +127,15 @@ def time_height_plot(filepath: str, u_mean: np.ndarray, v_mean: np.ndarray,
              norm=norm)
     plt.savefig(filepath)
     plt.close()
+
+
+def process_inputs(inputs: List[str]) -> List[str]:
+    # take in argparse arg for input files and expand any glob expressions that didn't get expanded in the shell
+    # expand glob expression if it didn't get expanded in the shell
+    infiles = []
+    for path in inputs:
+        if not glob.has_magic(path):
+            infiles.append(path)
+        else:
+            infiles.extend(glob.glob(path))
+    return sorted(list(infiles))
