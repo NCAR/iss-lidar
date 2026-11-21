@@ -134,11 +134,8 @@ def process_inputs(inputs: List[str]) -> List[str]:
     # expand glob expression if it didn't get expanded in the shell
     infiles = []
     for path in inputs:
-        print(f"Processing input path: {path}")
-        if "*" not in path:
-            print(f"Adding non-glob path: {path}")
+        if not glob.has_magic(path):
             infiles.append(path)
         else:
-            print(f"Expanding glob path: {path}")
             infiles.extend(glob.glob(path))
     return sorted(list(infiles))
