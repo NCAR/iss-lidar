@@ -3,8 +3,10 @@ import numpy as np
 from pathlib import Path
 
 from iss_lidar.tools import create_filename, wspd_wdir_from_uv, read_cfradial
+from iss_lidar.tools import process_inputs
 
 datadir = Path(__file__).parent.parent.joinpath("testdata")
+
 
 def test_create_filename():
     # VAD
@@ -48,3 +50,30 @@ def test_cfradial1_vs_cfradial2():
             np.testing.assert_allclose(d1, d2, equal_nan=True)
         else:
             assert d1 == d2
+
+
+def test_process_inputs(tmp_path):
+    input = ["Stare_122_20230807_00.hpl"]
+    assert process_inputs(input) == ["Stare_122_20230807_00.hpl"]
+    input = ["Stare_122_20230807_00.hpl", "Stare_122_20230807_01.hpl"]
+    assert process_inputs(input) == ["Stare_122_20230807_00.hpl",
+                                     "Stare_122_20230807_01.hpl"]
+    input = ["Stare*.hpl"]
+    # create fi[les matching the glob pattern
+    (tmp_path / "Stare_122_20230807_00.hpl").touch()
+    (tmp_path / "Stare_122_20230807_01.hpl").touch()
+    (tmp_path / "Stare_122_20230807_02.hpl").touch()
+    assert process_inputs([str(tmp_path / "Stare_122_20230807_*.hpl")]) == [
+        str(tmp_path / "Stare_122_20230807_00.hpl"),
+        str(tmp_path / "Stare_122_20230807_01.hpl"),
+        str(tmp_path / "Stare_122_20230807_02.hpl")
+    ]
+    (tmp_path / "M2HATS_20230807_00.hpl").touch()
+    input = ["M2HATS_20230807_00.hpl",
+             str(tmp_path / "Stare_122_20230807_*.hpl")]
+    assert process_inputs(input) == sorted([
+        "M2HATS_20230807_00.hpl",
+        str(tmp_path / "Stare_122_20230807_00.hpl"),
+        str(tmp_path / "Stare_122_20230807_01.hpl"),
+        str(tmp_path / "Stare_122_20230807_02.hpl")
+    ])
